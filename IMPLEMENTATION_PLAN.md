@@ -2,7 +2,7 @@
 
 ## Objective and guardrails
 
-Elevate the existing RePlate monorepo into a polished food redistribution product while preserving the working Expo, Express, PostgreSQL, and Prisma architecture. Work proceeds in six explicit phases. Phase 1 is in progress; no later phase or new product feature begins without the user's explicit approval.
+Elevate the existing RePlate monorepo into a polished food redistribution product while preserving the working Expo, Express, PostgreSQL, and Prisma architecture. Phase 1 and the user-approved Phase 2 are complete for implementation and automated checks. Phase 3 and later product features have not been started and require their own approval.
 
 - Keep role authorization, validation, transactional reservations, notification behavior, native pickers, and existing navigation working.
 - Keep PostgreSQL data and migrations non-destructive. Any future schema changes are additive, reviewed, and tested against existing records.
@@ -32,19 +32,19 @@ packages/shared/src/                           Shared role and workflow types
 
 The mobile app uses Expo SDK 58, React Native 0.88, React 19, Expo Router, TanStack Query, SecureStore, native Android date/time pickers, and Lucide font icons. The API owns business rules and persistence; Prisma uses PostgreSQL. Donation approval serializes on the donation record and reserves quantity transactionally. The current schema has `User`, `Organization`, `VolunteerProfile`, `Donation`, `Request`, `Assignment`, and `Delivery` models.
 
-### Existing UI and brand foundation
+### UI and brand foundation (Phase 1 complete; Phase 2 now applied across screens)
 
-- Shared UI primitives already exist in `apps/mobile/src/components/ui.tsx`; most screens use them, with some screen-specific inline styles remaining.
-- `apps/mobile/src/theme/index.ts` only defines a compact color object. It does not yet define the requested spacing, typography, radius, elevation, or semantic status tokens.
-- The current app uses the product name and a Lucide food icon, but no original RePlate logo, app icon, or splash configuration/assets exist in the mobile project.
-- Toast colors and a few auth text colors are still hard-coded instead of consuming semantic design tokens.
+- Shared UI primitives in `apps/mobile/src/components/ui.tsx` now cover screens, titles, fields, native date/time pickers, buttons, cards, statuses, empty/loading states, metrics, section headings, and filters.
+- `apps/mobile/src/theme/index.ts` provides the RePlate palette plus spacing, typography, radii, elevation, and semantic status tokens while retaining aliases for existing screens.
+- Original logo, app icon, and splash assets are under `apps/mobile/assets/branding` and wired to Expo configuration.
+- Phase 2 applies the shared system across auth and all four role experiences; a few data-specific layouts still use component styles for information hierarchy.
 - `app.json` has Expo Router, SecureStore, Status Bar, and date picker plugins. Branding assets need native app-config wiring. Expo Go cannot demonstrate the final native splash/app icon; a release/development build is needed to validate those native assets. [Expo SDK 58 splash-screen guidance](https://docs.expo.dev/versions/v58.0.0/sdk/splash-screen/)
 
 ### Main risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
-| Broad UI changes can hide regressions in role workflows | Keep Phase 1 limited to shared tokens, primitives, and branding; defer complete screen layout changes to Phase 2 and verify each role flow. |
+| Broad UI changes can hide regressions in role workflows | Redesign in role milestones, retain API contracts and role guards, add state tests, then verify the full workflow and device checklist. |
 | A logo that looks good in a large view may fail at launcher size | Design a simple high-contrast mark; create 1024px PNG icon variants and inspect at small sizes before configuration. |
 | Native splash/icon config will not appear in Expo Go | Verify Expo config and Android export now; reserve device/release-build inspection for a build that includes native assets. |
 | Adding analytics can double count partial reservations or deliveries | In Phase 3, derive redistributed quantities from completed requests/delivery confirmation, not approved reservations; test calculations against API/database fixtures. |
@@ -52,7 +52,7 @@ The mobile app uses Expo SDK 58, React Native 0.88, React 19, Expo Router, TanSt
 | Urgency could be confused with food safety | Compute urgency from server time and collection deadline; state explicitly that urgency is logistical and says nothing about food safety. |
 | Existing operational data must survive future schema work | Use additive migrations, inspect migration status, and never reset/drop user data. |
 
-## Phase 1 — Branding and design system (active)
+## Phase 1 — Branding and design system (complete)
 
 ### Scope
 
@@ -76,13 +76,15 @@ The mobile app uses Expo SDK 58, React Native 0.88, React 19, Expo Router, TanSt
 
 No full screen/dashboard redesign, no analytics endpoints, no OTP workflows, no urgency filters, no backend/database changes, and no new role actions. Those belong to later phases.
 
-## Phase 2 — Complete mobile UI redesign (approval required)
+## Phase 2 — Complete mobile UI redesign (approved and implemented)
 
 Redesign all existing mobile screens consistently using the Phase 1 system: Welcome/auth/role selection; Donor home, donation form/list/detail, requests/history/profile; NGO home, discovery/detail/request/tracking/received donations/profile; Volunteer home, task lists, pickup/delivery/completed tasks/profile; Admin dashboard, statistics, verification, user/donation/request/delivery monitoring.
 
 Preserve endpoint contracts, role visibility, form validation, loading/error/toast behavior, cancellation/quantity rules, date/time controls, and navigation. First map actual implemented routes and API capabilities; do not invent unavailable backend actions. Add screen-level tests where practical, run all existing tests and export, then leave manual Android visual checks unchecked until observed.
 
-**Exit gate:** all existing workflows remain connected to real APIs; every implemented route follows the shared visual system; TypeScript/tests/export pass; documentation and screenshots/checklist are updated. Stop for user review.
+**Completed:** The six internal milestones are implemented in sequence. Shared UI and navigation are consistent; live API data backs dashboards and monitoring; NGO detail/request uses existing routes and validation; volunteer assignment state filters and current workflow actions are retained. TypeScript, API/mobile automated tests, shared/API build, and Android production export passed. Expo dependency check used its local bundled map; network lookup was unavailable. Expo Doctor could not run because the CLI was absent locally and npm registry access was unavailable. Physical-device layout, native picker, and end-to-end role navigation checks remain unchecked in `TESTING.md`.
+
+**Exit gate:** Code and automated/export checks are complete. Device-only checks remain for the user's phone; do not claim those until observed. No Phase 3 work has begun.
 
 ## Phase 3 — Impact and sustainability dashboard (approval required)
 
@@ -126,4 +128,17 @@ Prepare accurate README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMEN
 - [x] Verify automated checks and document actual results (mobile/API tests, workspace TypeScript, Expo SDK check/Doctor, Expo config, Android export).
 - [x] Pause for approval before Phase 2; no later phase or new feature is started automatically.
 
-**Phase 1 status: complete for code/config/export.** Native launcher/splash visuals still require a native Android build/device and remain unchecked in `TESTING.md`. Phase 2 and Features A/B/C are not started; proceed only after explicit user approval.
+**Phase 1 status: complete for code/config/export.** Native launcher/splash visuals still require a native Android build/device and remain unchecked in `TESTING.md`.
+
+## Phase 2 progress log
+
+- [x] Milestone 1: Welcome, Login, Registration redesigned with shared brand and form components.
+- [x] Milestone 2: Donor dashboard, listing/create/history, requests, profile and cancellation presentation redesigned.
+- [x] Milestone 3: NGO dashboard, discovery, API-backed donation detail, quantity-validated request, received/request history and profile redesigned.
+- [x] Milestone 4: Volunteer dashboard/tasks, availability, open/in-progress/completed filters and existing task actions redesigned.
+- [x] Milestone 5: Admin dashboard/statistics, organization verification, role-filtered users, donation and request monitoring redesigned.
+- [x] Milestone 6: Shared navigation/consistency review and manual Android verification checklist updated.
+- [x] Automated checks: TypeScript; API tests 8/8; mobile tests 27/27; shared/API build; Android export (1,232 modules, 2.9 MB Hermes); diff whitespace check.
+- [ ] Physical Android visual, native picker, font scale, and complete cross-role navigation/workflow check (manual, pending).
+
+**Phase 2 status: implementation and automated checks complete; physical-device visual validation pending. Phase 3 remains unstarted.**

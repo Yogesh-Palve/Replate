@@ -1,14 +1,19 @@
 import React, { useRef, useState } from "react";
 import { router } from "expo-router";
-import { Pressable, Text } from "react-native";
-import { Button, Field, Screen, Status, Title } from "../../src/components/ui";
+import { Pressable, Text, View } from "react-native";
+import { Lucide, type LucideIconName } from "@react-native-vector-icons/lucide";
+import { BrandLockup } from "../../src/components/BrandLockup";
+import { Button, Card, Field, Screen, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { clearFormError, createSubmissionGuard, getApiErrorMessage, getApiValidationErrors, validateRegistration, type FormErrors, type RegistrationValues } from "../../src/forms/validation";
-import { theme } from "../../src/theme";
 import { useToast } from "../../src/notifications/ToastProvider";
-import { BrandLockup } from "../../src/components/BrandLockup";
+import { colors, radii, spacing, typography } from "../../src/theme";
 
-const roles = ["DONOR", "NGO", "VOLUNTEER"] as const;
+const roles = [
+  { id: "DONOR", title: "Share surplus food", description: "Restaurants, kitchens and people", icon: "hand-heart" },
+  { id: "NGO", title: "Request for an NGO", description: "Community organizations", icon: "building-2" },
+  { id: "VOLUNTEER", title: "Deliver with care", description: "Volunteer to move food locally", icon: "truck" },
+] as const satisfies ReadonlyArray<{ id: RegistrationValues["role"]; title: string; description: string; icon: LucideIconName }>;
 
 export default function Register() {
   const { register } = useAuth();
@@ -51,20 +56,56 @@ export default function Register() {
   };
 
   return <Screen>
-    <BrandLockup markSize={48} />
-    <Title sub="Join your local food-sharing community">Create account</Title>
-    <Text style={{ color: theme.dark, fontWeight: "600", marginBottom: 8 }}>I am joining as</Text>
-    {roles.map(item => <Pressable key={item} onPress={() => { setRole(item); setErrors({}); }} style={{ backgroundColor: role === item ? theme.pale : theme.white, borderColor: role === item ? theme.green : theme.border, borderWidth: 1, padding: 13, borderRadius: 12, marginBottom: 8 }}>
-      <Text style={{ color: theme.dark, fontWeight: "600" }}>{item === "NGO" ? "Community organization (NGO)" : item[0] + item.slice(1).toLowerCase()}</Text>
-    </Pressable>)}
-    <Field label="Your name" value={name} onChangeText={value => { setName(value); setErrors(current => clearFormError(current, "name")); }} error={errors.name} />
-    <Field label="Email" value={email} onChangeText={value => { setEmail(value); setErrors(current => clearFormError(current, "email")); }} keyboardType="email-address" error={errors.email} />
-    <Field label="Password (8+ characters)" value={password} onChangeText={value => { setPassword(value); setErrors(current => clearFormError(current, "password")); }} secureTextEntry error={errors.password} />
-    {role === "NGO" && <>
-      <Field label="Organization name" value={organizationName} onChangeText={value => { setOrganizationName(value); setErrors(current => clearFormError(current, "organizationName")); }} error={errors.organizationName} />
-      <Field label="Organization address" value={address} onChangeText={value => { setAddress(value); setErrors(current => clearFormError(current, "address")); }} multiline error={errors.address} />
-      <Status>Account verification is required before requesting food.</Status>
-    </>}
-    <Button title="Create account" onPress={submit} disabled={busy} loading={busy} />
+    <BrandLockup markSize={46} />
+    <Title eyebrow="JOIN YOUR LOCAL FOOD NETWORK" sub="Choose how you would like to help your community.">Create your account</Title>
+    <Card>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.md }}>
+        <View style={{ width: 42, height: 42, borderRadius: radii.md, backgroundColor: colors.surfaceSoft, alignItems: "center", justifyContent: "center" }}>
+          <Lucide name="users-round" size={20} color={colors.primary} accessibilityElementsHidden importantForAccessibility="no" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: colors.ink, fontSize: typography.size.subtitle, fontWeight: typography.weight.bold }}>I’m joining as a</Text>
+          <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption, marginTop: 2 }}>You can’t change your role later.</Text>
+        </View>
+      </View>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Choose an account role">
+        {roles.map(item => {
+          const selected = role === item.id;
+          return <Pressable
+            key={item.id}
+            onPress={() => { setRole(item.id); setErrors({}); }}
+            accessibilityRole="radio"
+            accessibilityLabel={`${item.title}. ${item.description}`}
+            accessibilityState={{ selected }}
+            style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: spacing.sm, borderWidth: selected ? 1.5 : 1, borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.successSoft : colors.surface, borderRadius: radii.md, padding: spacing.md, marginBottom: spacing.sm, opacity: pressed ? 0.88 : 1 })}
+          >
+            <View style={{ width: 42, height: 42, borderRadius: radii.md, backgroundColor: selected ? colors.surface : colors.surfaceSoft, alignItems: "center", justifyContent: "center" }}>
+              <Lucide name={item.icon} size={20} color={selected ? colors.primary : colors.secondaryText} accessibilityElementsHidden importantForAccessibility="no" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.ink, fontSize: typography.size.small, fontWeight: typography.weight.bold }}>{item.title}</Text>
+              <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption, marginTop: 3 }}>{item.description}</Text>
+            </View>
+            <Lucide name={selected ? "circle-check" : "circle"} size={21} color={selected ? colors.primary : colors.border} accessibilityElementsHidden importantForAccessibility="no" />
+          </Pressable>;
+        })}
+      </View>
+    </Card>
+
+    <Card>
+      <Text style={{ color: colors.ink, fontSize: typography.size.subtitle, fontWeight: typography.weight.bold, marginBottom: spacing.md }}>A few details</Text>
+      <Field label="Your name" value={name} onChangeText={value => { setName(value); setErrors(current => clearFormError(current, "name")); }} autoComplete="name" icon="user-round" placeholder="How should we greet you?" error={errors.name} />
+      <Field label="Email address" value={email} onChangeText={value => { setEmail(value); setErrors(current => clearFormError(current, "email")); }} keyboardType="email-address" autoComplete="email" icon="mail" placeholder="you@example.com" error={errors.email} />
+      <Field label="Password (8+ characters)" value={password} onChangeText={value => { setPassword(value); setErrors(current => clearFormError(current, "password")); }} secureTextEntry autoComplete="password" icon="lock-keyhole" placeholder="Create a secure password" error={errors.password} />
+      {role === "NGO" && <>
+        <View style={{ marginTop: spacing.xs, marginBottom: spacing.sm }}><Status variant="warning">NGO verification is required before requesting food.</Status></View>
+        <Field label="Organization name" value={organizationName} onChangeText={value => { setOrganizationName(value); setErrors(current => clearFormError(current, "organizationName")); }} icon="building-2" placeholder="Your registered organization" error={errors.organizationName} />
+        <Field label="Organization address" value={address} onChangeText={value => { setAddress(value); setErrors(current => clearFormError(current, "address")); }} multiline icon="map-pin" placeholder="Street, city and area" error={errors.address} />
+      </>}
+      <Button title="Create account" icon="arrow-right" onPress={submit} disabled={busy} loading={busy} />
+      <Pressable onPress={() => router.replace("/(auth)/login")} accessibilityRole="link" style={{ alignItems: "center", paddingTop: spacing.lg, paddingBottom: spacing.xs }}>
+        <Text style={{ color: colors.secondaryText, fontSize: typography.size.small }}>Already have an account? <Text style={{ color: colors.primary, fontWeight: typography.weight.bold }}>Log in</Text></Text>
+      </Pressable>
+    </Card>
   </Screen>;
 }

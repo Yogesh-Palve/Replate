@@ -1,7 +1,33 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { Link } from "expo-router";
-import { Button, Screen, Title } from "../../src/components/ui";
-import { theme } from "../../src/theme";
+import { Lucide } from "@react-native-vector-icons/lucide";
 import { BrandLockup } from "../../src/components/BrandLockup";
-export default function Welcome() { return <Screen><View style={{ flex: 1, minHeight: 650, justifyContent: "center" }}><BrandLockup markSize={82} centered /><Title sub="Share surplus. Strengthen your community.">Fresh food finds a good home.</Title><Text style={{ color: theme.muted, lineHeight: 24, marginBottom: 24 }}>RePlate connects surplus food with local organizations and the volunteers who get it there.</Text><Link href="/(auth)/login" asChild><Button title="Log in" onPress={() => {}} /></Link><Link href="/(auth)/register" asChild><Button title="Create an account" secondary onPress={() => {}} /></Link></View></Screen>; }
+import { Button, Screen } from "../../src/components/ui";
+import { colors, radii, spacing, typography } from "../../src/theme";
+
+export default function Welcome() {
+  return <Screen>
+    <BrandLockup markSize={48} />
+    <View style={{ backgroundColor: colors.surfaceSoft, borderRadius: radii.xl, padding: spacing.xl, minHeight: 300, justifyContent: "space-between", overflow: "hidden", marginBottom: spacing.xl }}>
+      <View style={{ position: "absolute", width: 210, height: 210, borderRadius: 110, backgroundColor: "#E4EDE0", right: -62, top: -60 }} />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs, alignSelf: "flex-start", borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.surface }}>
+        <Lucide name="sparkles" size={14} color={colors.primary} accessibilityElementsHidden importantForAccessibility="no" />
+        <Text style={{ color: colors.primary, fontSize: typography.size.caption, fontWeight: typography.weight.bold, letterSpacing: 0.8 }}>FOOD RESCUE, MADE EASY</Text>
+      </View>
+      <View style={{ alignItems: "center", paddingVertical: spacing.md }}>
+        <Image source={require("../../assets/branding/replate-mark.png")} resizeMode="contain" accessibilityLabel="RePlate plate and leaf logo" style={{ width: 132, height: 132 }} />
+      </View>
+      <View>
+        <Text style={{ color: colors.ink, fontSize: typography.size.display, lineHeight: 40, fontWeight: typography.weight.heavy, letterSpacing: -1.1 }}>Good Food.{"\n"}Shared Better.</Text>
+        <Text style={{ color: colors.secondaryText, fontSize: typography.size.body, lineHeight: typography.line.body, marginTop: spacing.sm }}>Help good food reach the people and communities who need it.</Text>
+      </View>
+    </View>
+    <Link href="/(auth)/login" asChild><Button title="Log in" icon="arrow-right" onPress={() => {}} /></Link>
+    <Link href="/(auth)/register" asChild><Button title="Create an account" secondary icon="user-round-plus" onPress={() => {}} /></Link>
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, marginTop: spacing.lg, marginBottom: spacing.md }}>
+      <Lucide name="shield-check" size={16} color={colors.secondaryText} accessibilityElementsHidden importantForAccessibility="no" />
+      <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption }}>A community powered by care and less waste.</Text>
+    </View>
+  </Screen>;
+}

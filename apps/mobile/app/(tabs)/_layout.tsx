@@ -14,11 +14,13 @@ export default function TabsLayout() {
     headerShown: true,
     headerStyle: { backgroundColor: theme.bg },
     headerTintColor: theme.dark,
+    headerTitleStyle: { color: theme.dark, fontSize: 17, fontWeight: "700" },
+    headerShadowVisible: false,
     tabBarActiveTintColor: theme.green,
     tabBarInactiveTintColor: theme.muted,
     tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
     tabBarIconStyle: { marginTop: 2 },
-    tabBarStyle: { height: 64, paddingBottom: 7, paddingTop: 4, backgroundColor: theme.white },
+    tabBarStyle: { height: 66, paddingBottom: 8, paddingTop: 5, backgroundColor: theme.white, borderTopColor: theme.border, borderTopWidth: 1, elevation: 8 },
   }}>
     <Tabs.Screen name="index" options={{
       title: "Home", tabBarLabel: "Home",

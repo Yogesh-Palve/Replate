@@ -1,12 +1,21 @@
 # Development Log
 
+## 2026-11-15 — Phase 2: Complete role-based mobile UI redesign
+
+- Completed the approved sequence: Welcome/Login/Registration; Donor home, donation create/list/history, requests and profile; NGO home, discovery/details/request/received tracking and profile; Volunteer home, assignment filters/actions and profile; Admin overview, verification, user filters, and donation/request monitoring.
+- Expanded shared screen, title, field, date/time, button, card, status, empty/loading, metric, section, and filter components with consistent spacing, icon treatment, Android accessibility labels, and pressed states. Refined bottom navigation and kept all four role visibility rules.
+- Added data-backed role summaries and NGO Donation Details. NGO request submission validates whole-number quantity against current available stock, calls the existing request API, preserves guarded loading/error/success feedback, and invalidates donation/request/detail queries. Existing backend, schema, quantities, and workflow rules were not changed.
+- Added tests for volunteer task-state filters; extended donation state tests. Latest checks passed: workspace TypeScript, API tests (8/8), mobile tests (27/27), shared/API build, Android Expo export (1,232 modules; 2.9 MB Hermes bundle), and `git diff --check`.
+- Expo dependency validation reports packages up to date against the bundled SDK compatibility map; the online versions endpoint was unreachable. Expo Doctor could not run because it is not installed locally and network access to npm registry is unavailable. No Android emulator/SDK or physical device was available for this run, so visual/responsiveness/navigation checks and native date/time picker checks remain pending in `TESTING.md`.
+- No Phase 3 work or new impact/QR/urgency features were started.
+
 ## 2026-11-15 — Phase 1: RePlate branding and design system
 
 - Inspected the actual Expo Router auth/tab routes, shared controls, theme, icon package, app config, API/database boundaries, and package/test setup. The prior app had a small color-only theme, shared controls with inline style values, no original logo, and no launcher/splash assets.
 - Created an original plate, leaf, and circular-return mark with vector SVG source, reusable transparent PNG, iOS/general app icon, Android adaptive foreground, and branded splash art. Added a small Pillow-based asset regeneration script and configured SDK 58 splash/icon settings.
 - Expanded centralized tokens to include the requested brand palette, semantic states, spacing, typography, radii, and elevation while retaining compatibility aliases. Updated shared primitives, global toast colors, Android status bar, and auth screens to consume the shared foundation. Existing screen layouts and role/business flows were not redesigned.
 - Added tests for palette/aliases, design-token availability, and semantic workflow badge variants. Passed: mobile tests (22/22), API tests (8/8), workspace TypeScript checks, Expo dependency validation using the local SDK map (online versions endpoint unavailable), Expo Doctor (20/20), resolved Expo config asset/plugin paths, PNG asset regeneration, and Android production export (1,229 modules; 2.9 MB Hermes bundle). No physical-device or native splash visual claim is made; those require a native Android build/device.
-- Phase 1 code/config/export acceptance is complete. Phase 2 and all new product features remain gated on explicit user approval.
+- Phase 1 code/config/export acceptance is complete. Phase 2 redesign is now complete for code, automated checks, and Android bundle export; physical-device visual verification is still pending. Phase 3 and other new product features remain outside this approval.
 
 ## 2026-11-15 — Donation cancellation state and eligibility
 

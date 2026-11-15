@@ -4,7 +4,7 @@ RePlate is a cross-platform food surplus donation and redistribution app for don
 
 ## Current milestone
 
-The academic MVP implementation is in place. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for delivered milestones and [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) for current constraints and verification status. The API enforces role permissions and transactional quantity allocation; the mobile app contains role-aware authentication and workflow screens connected to the API.
+Phase 2's mobile UI redesign is implemented across authentication and all four roles. It retains the existing API-backed flows and adds an NGO donation detail/request screen plus clearer live-data dashboards and workflow filters. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for phase status and [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) for checks and device-test limits. The API enforces role permissions and transactional quantity allocation.
 
 ## Requirements
 
@@ -23,7 +23,7 @@ The academic MVP implementation is in place. See [IMPLEMENTATION_PLAN.md](IMPLEM
 
 The example `CORS_ORIGIN="*"` is for local development. Set it to exact trusted web origins before deploying the API publicly. Authentication routes currently have no request rate limiting; add deployment-level protection before exposing a public production service.
 
-The mobile workspace uses Expo SDK 58, React Native 0.88, and React 19.3. It uses Expo-compatible native Android date and time dialogs for donation preparation and collection scheduling, a shared top-of-screen toast for action/API feedback, Lucide icons for role-aware bottom navigation, and centralized RePlate design tokens. Original logo source and generated app/splash assets are under `apps/mobile/assets/branding`; regenerate their PNG files with `python apps/mobile/scripts/generate-brand-assets.py` (requires Pillow). The native splash and launcher icon settings are configured in `apps/mobile/app.json`; Expo Go does not display the final native splash, so validate those assets in an Android build. After installing dependencies, validate SDK package versions with `npm exec -w @replate/mobile -- expo install --check`.
+The mobile workspace uses Expo SDK 58, React Native 0.88, and React 19.3. It uses Expo-compatible native Android date and time dialogs for donation preparation and collection scheduling, a shared top-of-screen toast for action/API feedback, Lucide icons for role-aware bottom navigation, and centralized RePlate design tokens. Donor can create and review listings; NGOs discover listings, inspect details, and submit quantity-validated requests; volunteers manage assignment states; Admin reviews organizations and monitors real platform records. Original logo source and generated app/splash assets are under `apps/mobile/assets/branding`; regenerate their PNG files with `python apps/mobile/scripts/generate-brand-assets.py` (requires Pillow). The native splash and launcher icon settings are configured in `apps/mobile/app.json`; Expo Go does not display the final native splash, so validate those assets in an Android build. After installing dependencies, validate SDK package versions with `npm exec -w @replate/mobile -- expo install --check`.
 
 See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) and [TESTING.md](TESTING.md) for endpoints and verification steps. Public registration cannot set admin roles. Configure `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the API environment and run `npm run admin:bootstrap -w @replate/api` once to create the administrator.
 

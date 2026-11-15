@@ -1,11 +1,78 @@
 import React, { useEffect } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Link } from "expo-router";
+import { Lucide } from "@react-native-vector-icons/lucide";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../src/api/client";
-import { Button, Card, Screen, Status, Title } from "../../src/components/ui";
+import { Button, Card, LoadingState, MetricCard, Screen, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
+import { getDashboardMetrics } from "../../src/dashboard/summary";
 import { getApiErrorMessage } from "../../src/forms/validation";
 import { useToast } from "../../src/notifications/ToastProvider";
-import { theme } from "../../src/theme";
-export default function Home() { const { user } = useAuth(); const notify = useToast(); const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ["home", user?.role], queryFn: async () => { const path = user?.role === "ADMIN" ? "/admin/stats" : user?.role === "VOLUNTEER" ? "/volunteer/tasks" : user?.role === "DONOR" ? "/donations" : "/donations"; return (await api.get(path)).data; } }); useEffect(() => { if (isError) notify("error", getApiErrorMessage(error, "We could not load your latest activity."), { duration: null }); }, [error, isError, notify]); const roleLabel = user ? (user.role === "NGO" ? "Community organization" : user.role[0] + user.role.slice(1).toLowerCase()) : ""; return <Screen><Text style={{ color: theme.green, fontWeight: "700", marginBottom: 7 }}>REPLATE · {roleLabel.toUpperCase()}</Text><Title sub="Small acts can make a big difference.">Hello, {user?.name?.split(" ")[0] || "there"} 👋</Title>{isLoading ? <ActivityIndicator color={theme.green} /> : isError ? <Card><Button title="Try again" secondary onPress={() => refetch()} /></Card> : user?.role === "ADMIN" ? <Card><Text style={{ fontSize: 22, fontWeight: "800", color: theme.dark }}>Platform overview</Text>{Object.entries(data?.stats || {}).map(([k, v]) => <Text key={k} style={{ color: theme.text, paddingTop: 10 }}>{k.replace(/[A-Z]/g, x => ` ${x.toLowerCase()}`)}: {String(v)}</Text>)}</Card> : <Card><Text style={{ fontSize: 20, fontWeight: "800", color: theme.dark }}>Your next step</Text><Text style={{ color: theme.muted, lineHeight: 22, marginTop: 8 }}>{user?.role === "DONOR" ? "Share surplus food with a nearby organization." : user?.role === "NGO" ? "Browse fresh donations and request what your community needs." : "Pick up an open task and help deliver food to its destination."}</Text>{user?.role === "NGO" && user.organization?.verified === false && <Status>Waiting for admin verification</Status>}<View style={{ marginTop: 8 }}>{user?.role !== "VOLUNTEER" && <Link href="/(tabs)/donations" asChild><Button title={user?.role === "DONOR" ? "Manage donations" : "Browse donations"} onPress={() => {}} /></Link>}{user?.role === "VOLUNTEER" && <Link href="/(tabs)/tasks" asChild><Button title="View volunteer tasks" onPress={() => {}} /></Link>}</View></Card>}<Text style={{ color: theme.muted, marginTop: 10, fontSize: 13 }}>Every meal shared is a step toward less waste.</Text></Screen>; }
+import { colors, radii, spacing, typography } from "../../src/theme";
+
+const welcomeCopy = {
+  DONOR: { kicker: "YOUR FOOD CAN GO FURTHER", title: "Share the good stuff.", body: "List surplus food and help your neighborhood put it to good use.", action: "Manage donations", route: "/(tabs)/donations" as const, icon: "hand-heart" as const },
+  NGO: { kicker: "FRESH FOOD, CLOSER", title: "Find what your community needs.", body: "Browse local listings and keep your requests moving in one place.", action: "Discover food", route: "/(tabs)/donations" as const, icon: "package-open" as const },
+  VOLUNTEER: { kicker: "MAKE THE LAST MILE MATTER", title: "Good food needs a ride.", body: "Pick up an assignment and help deliver it to a local organization.", action: "View assignments", route: "/(tabs)/tasks" as const, icon: "truck" as const },
+  ADMIN: { kicker: "REPLATE OPERATIONS", title: "The network at a glance.", body: "Review platform activity and keep community organizations verified.", action: "Open admin tools", route: "/(tabs)/admin" as const, icon: "layout-dashboard" as const },
+};
+
+export default function Home() {
+  const { user } = useAuth();
+  const notify = useToast();
+  const role = user?.role ?? "DONOR";
+  const query = useQuery({
+    queryKey: ["home", role],
+    queryFn: async () => {
+      if (role === "ADMIN") return { admin: (await api.get("/admin/stats")).data.stats };
+      if (role === "VOLUNTEER") return { tasks: (await api.get("/volunteer/tasks")).data.tasks };
+      const [donationResponse, requestResponse] = await Promise.all([api.get("/donations"), api.get("/requests")]);
+      return { donations: donationResponse.data.donations, requests: requestResponse.data.requests };
+    },
+  });
+  useEffect(() => {
+    if (query.isError) notify("error", getApiErrorMessage(query.error, "We could not load your latest activity."), { duration: null });
+  }, [notify, query.error, query.isError]);
+
+  const copy = welcomeCopy[role];
+  const metrics = getDashboardMetrics(role, query.data?.donations, query.data?.requests, query.data?.tasks, query.data?.admin);
+  const roleName = role === "NGO" ? "Community organization" : role[0] + role.slice(1).toLowerCase();
+
+  return <Screen>
+    <Text style={{ color: colors.primary, fontSize: typography.size.caption, fontWeight: typography.weight.bold, letterSpacing: 1.15, marginBottom: spacing.xs }}>REPLATE  /  {roleName.toUpperCase()}</Text>
+    <Title sub={`Good to see you${user?.name ? `, ${user.name.split(" ")[0]}` : ""}.`}>Home</Title>
+
+    <Card style={{ backgroundColor: colors.surfaceSoft, borderColor: "#E2EBDD", borderRadius: radii.xl, padding: spacing.xl, overflow: "hidden" }}>
+      <View style={{ position: "absolute", width: 150, height: 150, borderRadius: 80, backgroundColor: "#E3EDE0", right: -50, top: -52 }} />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs, marginBottom: spacing.md }}>
+        <Lucide name={copy.icon} size={16} color={colors.primary} accessibilityElementsHidden importantForAccessibility="no" />
+        <Text style={{ color: colors.primary, fontSize: typography.size.caption, fontWeight: typography.weight.bold, letterSpacing: 0.8 }}>{copy.kicker}</Text>
+      </View>
+      <Text style={{ color: colors.ink, fontSize: typography.size.title, lineHeight: typography.line.title, fontWeight: typography.weight.heavy, letterSpacing: -0.7 }}>{copy.title}</Text>
+      <Text style={{ color: colors.secondaryText, fontSize: typography.size.small, lineHeight: typography.line.small, marginTop: spacing.xs, marginBottom: spacing.md }}>{copy.body}</Text>
+      {role === "NGO" && user?.organization?.verified === false ? <View style={{ marginBottom: spacing.sm }}><Status variant="warning">Organization verification required to request food</Status></View> : null}
+      <Link href={copy.route} asChild><Button title={copy.action} icon="arrow-right" onPress={() => {}} /></Link>
+      {role === "DONOR" ? <Link href="/(tabs)/requests" asChild><Button title="Review incoming requests" secondary icon="clipboard-list" onPress={() => {}} /></Link> : null}
+      {role === "NGO" ? <Link href="/(tabs)/requests" asChild><Button title="Track my requests" secondary icon="clipboard-list" onPress={() => {}} /></Link> : null}
+    </Card>
+
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.sm, marginBottom: spacing.md }}>
+      <Text style={{ color: colors.ink, fontSize: typography.size.heading, fontWeight: typography.weight.bold }}>At a glance</Text>
+      <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption }}>Live account data</Text>
+    </View>
+    {query.isLoading ? <Card><LoadingState label="Loading your latest activity" /></Card> : query.isError
+      ? <Card>
+        <View style={{ alignItems: "center", paddingVertical: spacing.md }}><Lucide name="cloud-alert" size={25} color={colors.error} accessibilityElementsHidden importantForAccessibility="no" /><Text style={{ color: colors.ink, fontWeight: typography.weight.semibold, marginTop: spacing.sm }}>Your activity could not be loaded</Text><Text style={{ color: colors.secondaryText, textAlign: "center", marginTop: spacing.xs }}>Check your connection and try again.</Text><Button title="Try again" secondary icon="refresh-cw" onPress={() => { void query.refetch(); }} /></View>
+      </Card>
+      : <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
+        {metrics.map(metric => <View key={metric.label} style={{ width: "48%", flexGrow: 1, minWidth: 120 }}><MetricCard {...metric} /></View>)}
+      </View>}
+
+    {role === "ADMIN" ? <Link href="/(tabs)/admin" asChild><Button title="Review organizations and activity" secondary icon="shield-check" onPress={() => {}} /></Link> : null}
+    <View style={{ alignItems: "center", flexDirection: "row", justifyContent: "center", gap: spacing.xs, marginTop: spacing.xl, marginBottom: spacing.sm }}>
+      <Lucide name="leaf" size={15} color={colors.sage} accessibilityElementsHidden importantForAccessibility="no" />
+      <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption }}>Good Food. Shared Better.</Text>
+    </View>
+  </Screen>;
+}

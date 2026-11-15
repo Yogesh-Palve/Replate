@@ -2,9 +2,9 @@
 
 ## Automated checks
 
-Run `npm ci`, `npm run typecheck`, `npm run build`, and `npm test`. API unit tests cover quantity reservation arithmetic, oversubscription rejection, and recognition of PostgreSQL serialization conflicts. The final review run passed all five API tests.
+Run `npm ci`, `npm run typecheck`, `npm run build`, and `npm test`. API unit tests cover quantity reservation arithmetic, oversubscription rejection, cancellation eligibility, and recognition of PostgreSQL serialization conflicts. The latest Phase 2 run passed all eight API tests.
 
-Run `npm run test:mobile` for client-side login, registration, donation scheduling, request quantity, API error formatting, and duplicate-submission guard tests. Run `npm exec -w @replate/mobile -- expo install --check` and `npm exec -w @replate/mobile -- expo-doctor` to validate Expo SDK dependencies.
+Run `npm run test:mobile` for client-side login, registration, donation scheduling/history/cancellation state, request quantity, API error formatting, duplicate-submission guard, role navigation, dashboard summary, task filter, toast, and design-token tests. Latest Phase 2 run passed all 27 mobile tests. Run `npm exec -w @replate/mobile -- expo install --check` and Expo Doctor when the required package and network access are available. This Phase 2 run used the bundled SDK map for dependency validation; Expo Doctor was unavailable offline.
 
 Phase 1 branding checks: mobile tests assert the supplied brand colors, shared spacing/type/radius/elevation tokens, semantic workflow badges, and status-to-badge mapping. Check app config and asset references with `npx expo config --type public` and export Android with `npm exec -w @replate/mobile -- expo export --platform android --output-dir dist`. Expo Go does not display the final native splash/app icon; verify those in an Android build.
 
@@ -111,3 +111,55 @@ ____________________________________________________________________________
 - Passed in this review: API tests (5/5), mobile validation/submission tests (7/7), workspace TypeScript checks, shared/API TypeScript build, Prisma schema validation, Prisma migration status (database up to date), local and LAN API health, expanded database-backed workflow smoke including simultaneous approvals, Expo SDK dependency check using the local bundled map, Expo Doctor (20/20), and Android production export (1,211 modules; 2.8 MB Hermes bundle).
 - `npm audit` reported six findings: three moderate through Expo's fingerprint/minimatch toolchain and three high through Prisma CLI/config/deepmerge-ts. Workspace audit output still listed these chains with `--omit=dev`, despite Prisma CLI being a development dependency; verify impact against the exact release install mode. Suggested automatic remediations require a major Expo downgrade or Prisma 7 upgrade. Neither was applied because it would risk the SDK 58 app or require a separate Prisma migration review. No critical findings were reported. Re-run `npm audit` before submission because advisories change.
 - The workstation has no Android SDK/emulator. The user previously confirmed donor registration and login on a physical phone; this final review did not independently exercise the phone, other roles' screens, or native picker dialogs. Those checks remain manual.
+
+## Phase 2 UI redesign status — 2026-11-15
+
+- Latest run: workspace TypeScript passed; API tests 8/8; mobile tests 27/27; shared/API production build passed; Android Expo export passed (1,232 modules, 2.9 MB Hermes bundle); `git diff --check` passed.
+- Expo dependency check reported dependencies up to date using Expo's bundled local map. Online version lookup was unavailable. Expo Doctor could not be run because it is not installed in this offline workspace and npm registry access failed; this is not reported as a pass.
+- No Android SDK/emulator or attached device was used in this run. All Phase 2 phone checks below remain unchecked, including native date/time dialogs and role-to-role navigation/workflow visuals.
+
+## Phase 2 redesigned screen checks (manual, results pending)
+
+Use the existing test accounts and real API data. Leave every box unchecked until observed on the phone. Do not mutate production accounts or delete data.
+
+### Authentication and shared navigation
+
+- [ ] Welcome shows RePlate branding and clear Login/Create Account actions; Android Back returns without a blank screen.
+- [ ] Login and registration show required/error states before loading, retain fields after recoverable errors, and navigate to the correct role's Home after success.
+- [ ] Role tabs show only permitted screens, use consistent icons/highlighting, and Back/navigation from Donation Details returns to Browse.
+- [ ] Shared loading, empty, retry, API error, success toast, and pending button treatments are readable and consistent.
+
+### Donor
+
+- [ ] Home metrics reflect current donor listings/requests; API failure displays retry/error treatment.
+- [ ] Donations separates Active and History; statuses and available/total quantities agree with API data.
+- [ ] Create Donation uses native preparation/collection date and time pickers; invalid values show field errors without loading; success creates one live listing.
+- [ ] Requests separates review/progress/history; Approve and Reject show pending state, outcome feedback, and refreshed quantities/statuses.
+- [ ] Profile shows the signed-in account and logs out to Welcome.
+
+### NGO
+
+- [ ] Home displays current requests and verification notice where applicable.
+- [ ] Browse search/category filters operate on API listings; unavailable food cannot be requested.
+- [ ] Donation Details displays current status, available quantity, donor notes, address, and collection deadline.
+- [ ] Request quantity must be a positive whole number within the displayed available amount; success appears in Requests and Donor review.
+- [ ] Requests separates active and received/completed items; receipt confirmation follows the existing workflow.
+- [ ] Profile shows organization identity/address/verification state and logout works.
+
+### Volunteer
+
+- [ ] Home counts live assignments; Tasks filters All/Open/In progress/Completed match server assignment states.
+- [ ] Availability persists after leaving and returning to Tasks.
+- [ ] Accept, collect, and deliver work in order, show pending and success/error feedback, and refresh task/request summaries.
+- [ ] Completed tasks remain under Completed after navigation; Profile reflects availability.
+
+### Admin
+
+- [ ] Home and Admin show real platform counts; non-admin accounts cannot access admin data/actions.
+- [ ] NGO verification is available for pending organizations and refreshes verified status after success.
+- [ ] User role filters, donation monitoring, and request monitoring show current API records without user mutation controls.
+- [ ] Admin navigation exposes no donor cancellation, NGO request/confirmation, or volunteer task controls.
+
+- [ ] Run the labeled test donation lifecycle and reconcile final status/quantities across Donor Donations/Requests, NGO Requests, Volunteer Tasks, and Admin monitoring.
+
+Physical device results: **pending user verification**. Automated checks cannot confirm native Android picker dialogs, layout at the user's display/font scale, or physical tap/navigation behavior.

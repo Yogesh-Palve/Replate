@@ -1,14 +1,26 @@
-import React, { useEffect, useRef } from "react";
-import { ActivityIndicator, Text } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Text, View } from "react-native";
+import { Lucide } from "@react-native-vector-icons/lucide";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../src/api/client";
-import { Button, Card, Screen, Status, Title } from "../../src/components/ui";
+import { Button, Card, EmptyState, FilterChip, IconBadge, LoadingState, Screen, SectionHeading, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { createSubmissionGuard, getApiErrorMessage } from "../../src/forms/validation";
 import { useToast } from "../../src/notifications/ToastProvider";
 import { theme } from "../../src/theme";
+import { colors, radii, spacing, typography } from "../../src/theme";
 
 type RequestAction = { id: string; op: "approve" | "reject" | "cancel" | "confirm" };
+type RequestFilter = "ALL" | "REVIEW" | "ACTIVE" | "HISTORY" | "RECEIVED";
+const activeStatuses = ["PENDING", "APPROVED", "VOLUNTEER_ASSIGNED", "COLLECTED", "DELIVERED"];
+
+function filterRequestList(requests: any[], filter: RequestFilter, donor: boolean) {
+  if (filter === "ALL") return requests;
+  if (filter === "REVIEW") return requests.filter(request => request.status === "PENDING");
+  if (filter === "RECEIVED") return requests.filter(request => request.status === "COMPLETED");
+  if (filter === "ACTIVE") return requests.filter(request => activeStatuses.includes(request.status));
+  return requests.filter(request => ["COMPLETED", "REJECTED", "CANCELLED"].includes(request.status) || (!donor && request.status === "COMPLETED"));
+}
 
 export default function Requests() {
   const { user } = useAuth();
@@ -16,6 +28,7 @@ export default function Requests() {
   const qc = useQueryClient();
   const donor = user?.role === "DONOR";
   const ngo = user?.role === "NGO";
+  const [filter, setFilter] = useState<RequestFilter>("ALL");
   const actionGuard = useRef(createSubmissionGuard()).current;
   const query = useQuery({ queryKey: ["requests"], queryFn: async () => (await api.get("/requests")).data.requests });
   const action = useMutation({
@@ -44,25 +57,47 @@ export default function Requests() {
     });
   };
   const buttonBusy = (id: string, op: RequestAction["op"]) => action.isPending && action.variables?.id === id && action.variables.op === op;
+  const requests = query.data || [];
+  const visibleRequests = useMemo(() => filterRequestList(requests, filter, Boolean(donor)), [donor, filter, requests]);
+  const filters = donor
+    ? [{ key: "ALL" as const, label: "All", count: requests.length }, { key: "REVIEW" as const, label: "Needs review", count: requests.filter((item: any) => item.status === "PENDING").length }, { key: "ACTIVE" as const, label: "In progress", count: requests.filter((item: any) => activeStatuses.includes(item.status) && item.status !== "PENDING").length }, { key: "HISTORY" as const, label: "History" }]
+    : [{ key: "ALL" as const, label: "All", count: requests.length }, { key: "ACTIVE" as const, label: "In progress", count: requests.filter((item: any) => activeStatuses.includes(item.status)).length }, { key: "RECEIVED" as const, label: "Received", count: requests.filter((item: any) => item.status === "COMPLETED").length }];
 
   return <Screen>
-    <Title sub={donor ? "Review incoming food requests" : "Follow your requested donations"}>Requests</Title>
-    {query.isLoading ? <ActivityIndicator color={theme.green} /> : query.isError
-      ? <Card><Button title="Retry" onPress={() => query.refetch()} /></Card>
-      : (query.data || []).length === 0
-        ? <Card><Text style={{ color: theme.muted }}>No requests yet. They will appear here when there is activity.</Text></Card>
-        : query.data.map((request: any) => <Card key={request.id}>
-          <Text style={{ fontSize: 18, color: theme.dark, fontWeight: "800" }}>{request.donation.foodName}</Text>
-          <Text style={{ color: theme.muted, marginTop: 4 }}>{request.quantity} {request.donation.unit} · {donor ? request.organization.name : `Pickup: ${request.donation.pickupAddress}`}</Text>
-          <Status>{request.status}</Status>
-          {request.note ? <Text style={{ color: theme.muted, marginBottom: 7 }}>{request.note}</Text> : null}
-          {donor && request.status === "PENDING" && <>
-            <Button title="Approve request" onPress={() => runAction({ id: request.id, op: "approve" })} disabled={action.isPending} loading={buttonBusy(request.id, "approve")} />
-            <Button title="Reject" secondary onPress={() => runAction({ id: request.id, op: "reject" })} disabled={action.isPending} loading={buttonBusy(request.id, "reject")} />
+    <Title eyebrow={donor ? "DONOR SPACE" : "COMMUNITY INBOX"} sub={donor ? "Review requests and follow each handover." : "Track your requests from approval through delivery."}>{donor ? "Requests" : "My requests"}</Title>
+    {!query.isLoading && !query.isError && requests.length > 0 ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginBottom: spacing.md }}>
+      {filters.map(item => <FilterChip key={item.key} label={item.label} count={item.count} selected={filter === item.key} onPress={() => setFilter(item.key)} />)}
+    </View> : null}
+    {query.isLoading ? <Card><LoadingState label="Loading requests" /></Card> : query.isError
+      ? <Card><EmptyState icon="cloud-alert" title="Requests could not load" description="Check your connection, then try again." action={<Button title="Retry" secondary icon="refresh-cw" onPress={() => { void query.refetch(); }} />} /></Card>
+      : requests.length === 0
+        ? <Card><EmptyState icon={donor ? "inbox" : "clipboard-list"} title={donor ? "No requests yet" : "Your request list is empty"} description={donor ? "When an organization requests your food, you can review it here." : "Browse available food to send your first request."} /></Card>
+        : visibleRequests.length === 0
+          ? <Card><EmptyState icon={filter === "HISTORY" || filter === "RECEIVED" ? "archive" : "clipboard-check"} title={filter === "HISTORY" || filter === "RECEIVED" ? "Nothing in this history yet" : "You’re all caught up"} description="Requests will appear here as their status changes." /></Card>
+          : <>
+            <SectionHeading title={filter === "RECEIVED" ? "Received donations" : filter === "HISTORY" ? "Request history" : filter === "REVIEW" ? "Waiting for your decision" : "Recent activity"} subtitle={`${visibleRequests.length} ${visibleRequests.length === 1 ? "request" : "requests"}`} />
+            {visibleRequests.map((request: any) => <Card key={request.id}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.md }}>
+                <IconBadge icon={request.status === "COMPLETED" ? "circle-check" : "package-open"} tone={request.status === "PENDING" ? "gold" : "sage"} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.ink, fontSize: typography.size.subtitle, lineHeight: typography.line.heading, fontWeight: typography.weight.bold }}>{request.donation.foodName}</Text>
+                  <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption, marginTop: spacing.xxs }}>{request.quantity} {request.donation.unit} · {donor ? request.organization.name : `Pickup: ${request.donation.pickupAddress}`}</Text>
+                </View>
+                <Status>{request.status}</Status>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.md, padding: spacing.sm, borderRadius: radii.md, backgroundColor: colors.canvas }}>
+                <Lucide name="calendar-clock" size={17} color={colors.secondaryText} accessibilityElementsHidden importantForAccessibility="no" />
+                <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption }}>Collect by {new Date(request.donation.collectionDeadline).toLocaleString()}</Text>
+              </View>
+              {request.note ? <Text style={{ color: colors.secondaryText, fontSize: typography.size.small, lineHeight: typography.line.small, marginTop: spacing.sm }}>{request.note}</Text> : null}
+              {donor && request.status === "PENDING" && <View style={{ marginTop: spacing.sm }}>
+                <Button title="Approve request" icon="circle-check" onPress={() => runAction({ id: request.id, op: "approve" })} disabled={action.isPending} loading={buttonBusy(request.id, "approve")} />
+                <Button title="Decline request" secondary destructive icon="circle-x" onPress={() => runAction({ id: request.id, op: "reject" })} disabled={action.isPending} loading={buttonBusy(request.id, "reject")} />
+              </View>}
+              {ngo && ["PENDING", "APPROVED"].includes(request.status) && <Button title="Cancel request" secondary destructive icon="ban" onPress={() => runAction({ id: request.id, op: "cancel" })} disabled={action.isPending} loading={buttonBusy(request.id, "cancel")} />}
+              {ngo && request.status === "DELIVERED" && <Button title="Confirm delivery" icon="package-check" onPress={() => runAction({ id: request.id, op: "confirm" })} disabled={action.isPending} loading={buttonBusy(request.id, "confirm")} />}
+              {request.assignment?.volunteer ? <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.md }}><Lucide name="truck" size={16} color={colors.secondaryText} accessibilityElementsHidden importantForAccessibility="no" /><Text style={{ color: colors.secondaryText, fontSize: typography.size.caption }}>Volunteer: {request.assignment.volunteer.name}</Text></View> : null}
+            </Card>)}
           </>}
-          {ngo && ["PENDING", "APPROVED"].includes(request.status) && <Button title="Cancel request" secondary onPress={() => runAction({ id: request.id, op: "cancel" })} disabled={action.isPending} loading={buttonBusy(request.id, "cancel")} />}
-          {ngo && request.status === "DELIVERED" && <Button title="Confirm successful delivery" onPress={() => runAction({ id: request.id, op: "confirm" })} disabled={action.isPending} loading={buttonBusy(request.id, "confirm")} />}
-          {request.assignment?.volunteer && <Text style={{ color: theme.muted }}>Volunteer: {request.assignment.volunteer.name}</Text>}
-        </Card>)}
   </Screen>;
 }
