@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ViewStyle } from "react-native";
 import { Lucide, type LucideIconName } from "@react-native-vector-icons/lucide";
-import { colors, getButtonPalette, getStatusVariant, radii, semantic, spacing, theme, typography } from "../theme";
+import { colors, getButtonPalette, getStatusLabel, getStatusVariant, radii, semantic, spacing, theme, typography } from "../theme";
 
 export function Screen({ children }: React.PropsWithChildren) {
   return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>{children}</ScrollView>;
@@ -116,7 +116,8 @@ export function Status({ children, variant }: React.PropsWithChildren<{ variant?
   const label = typeof children === "string" || typeof children === "number" ? String(children) : "";
   const tone = variant ?? getStatusVariant(label);
   const color = tone === "neutral" ? { foreground: theme.muted, background: theme.colors.surfaceSoft, border: theme.border } : semantic[tone];
-  return <Text accessibilityRole="text" style={[s.status, { color: color.foreground, backgroundColor: color.background, borderColor: color.border }]}>{children}</Text>;
+  const display = typeof children === "string" ? getStatusLabel(children) : children;
+  return <Text accessibilityRole="text" style={[s.status, { color: color.foreground, backgroundColor: color.background, borderColor: color.border }]}>{display}</Text>;
 }
 
 export function SectionHeading({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
@@ -170,7 +171,7 @@ const s = StyleSheet.create({
   pressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
   buttonText: { color: theme.white, fontWeight: typography.weight.bold, fontSize: typography.size.body },
   card: { backgroundColor: theme.white, borderRadius: radii.lg, padding: spacing.lg, borderWidth: 1, borderColor: theme.border, marginBottom: spacing.md, ...theme.shadows.card },
-  status: { overflow: "hidden", alignSelf: "flex-start", borderWidth: 1, borderRadius: radii.pill, paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm, fontSize: typography.size.caption, fontWeight: typography.weight.semibold, marginVertical: spacing.xs },
+  status: { overflow: "hidden", alignSelf: "flex-start", flexShrink: 1, maxWidth: 136, textAlign: "center", borderWidth: 1, borderRadius: radii.pill, paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm, fontSize: typography.size.caption, fontWeight: typography.weight.semibold, marginVertical: spacing.xs },
   sectionHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md, marginTop: spacing.sm, marginBottom: spacing.md },
   sectionCopy: { flex: 1, gap: spacing.xxs },
   sectionTitle: { color: theme.dark, fontSize: typography.size.heading, lineHeight: typography.line.heading, fontWeight: typography.weight.bold, letterSpacing: -0.35 },

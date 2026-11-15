@@ -204,13 +204,13 @@ Phase 2 follow-up automated checks passed: mobile tests 34/34, API tests 8/8, wo
 - Passed: API tests 12/12; mobile tests 37/37; workspace TypeScript; shared/API build; Prisma validation and migration status; Expo SDK package check (local SDK map because network metadata is unavailable); live PostgreSQL workflow smoke; Android production export (1,555 modules; 3.7 MB Hermes bundle).
 - Additive migration `20261115120000_collection_qr_tokens` is applied; Prisma reports the database is up to date. No reset or delete was used. Smoke-created `.invalid` fixtures are retained.
 
-### Physical Android QR verification — leave unchecked until observed
+### Physical Android QR verification
 
-- [ ] As Donor, open Requests after a Volunteer accepts an assignment; show its QR and confirm expiry is visible. Generate a second QR and confirm it replaces the first.
-- [ ] As the assigned Volunteer, open the task and choose **Scan donor collection QR**. Grant camera access and scan the current donor QR; confirm collection succeeds once and the task advances to COLLECTED.
+- [x] Donor displays the accepted assignment's collection QR; assigned Volunteer scans it on Android and collection succeeds. User reported this core handover test successful.
+- [ ] Confirm expiry is visible and a newly generated QR replaces the previous one.
 - [ ] Try a QR from another assignment, a superseded QR, and a QR after its 10-minute expiry; confirm each is rejected and can be retried after the donor generates a fresh code.
 - [ ] Confirm another Volunteer cannot redeem the assignment QR and the assigned Volunteer cannot reuse the same QR.
 - [ ] Complete Mark delivered and NGO Confirm delivery; verify all three role views show the consistent final state.
 - [ ] Deny camera permission once, verify RePlate explains the need, then grant permission in Android settings and retry scanning.
 
-Do not mark QR behavior as physically verified until the user confirms these checks. This workstation has no Android emulator or `adb` connection.
+The core donor-to-volunteer QR handover was confirmed on the user's physical Android phone. Unchecked negative, permission-recovery, expiry, and downstream receipt checks still require manual confirmation. This workstation has no Android emulator or `adb` connection.

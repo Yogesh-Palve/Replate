@@ -1,5 +1,11 @@
 # Development Log
 
+## 2026-11-15 — Physical QR confirmation and NGO listing badge fix
+
+- User confirmed the donor-to-assigned-volunteer QR handover succeeded on a physical Android phone. The QR display, scan, and collection checklist items are marked accordingly; expiry/reissue, negative scans, camera permission recovery, and downstream receipt checks remain pending.
+- Fixed the NGO Browse card layout for `PARTIALLY_RESERVED`: the badge now reads “Partially reserved” and moves below the header so it cannot squeeze the listing title. Shared status labels for other long states are title-cased, with a max-width and wrapping safeguard on the common badge.
+- Added regression coverage for donation-card status labels and other long workflow labels. Mobile tests, TypeScript, and Android production export passed (38 mobile tests; 1,555 modules; 3.7 MB Hermes bundle).
+
 ## 2026-11-15 — Phase 4: One-time QR collection verification
 
 - Added an additive Prisma `CollectionToken` table with unique assignment/token-hash constraints, expected volunteer binding, expiry, one-time use, and revocation. Applied migration `20261115120000_collection_qr_tokens` to the existing PostgreSQL database; Prisma reports the database is up to date. No existing rows were reset or deleted.

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { colors, designTokens, getButtonPalette, getStatusVariant, radii, spacing, theme, typography } from "./index.js";
+import { colors, designTokens, getButtonPalette, getStatusLabel, getStatusVariant, radii, spacing, theme, typography } from "./index.js";
 
 test("brand palette and existing screen aliases use the RePlate design colors", () => {
   assert.equal(colors.primary, "#176B45");
@@ -35,6 +35,13 @@ test("workflow statuses map to accessible semantic badge variants", () => {
   assert.equal(getStatusVariant("COMPLETED"), "success");
   assert.equal(getStatusVariant("AVAILABLE"), "success");
   assert.equal(getStatusVariant("Account verification is required before requesting food."), "neutral");
+});
+
+test("long workflow statuses use readable labels instead of enum identifiers", () => {
+  assert.equal(getStatusLabel("PARTIALLY_RESERVED"), "Partially reserved");
+  assert.equal(getStatusLabel("VOLUNTEER_ASSIGNED"), "Volunteer assigned");
+  assert.equal(getStatusLabel("WAITING_FOR_ADMIN_VERIFICATION"), "Waiting for admin verification");
+  assert.equal(getStatusLabel("CANCELLED"), "CANCELLED");
 });
 
 test("destructive buttons use the centralized danger surface and white foreground", () => {

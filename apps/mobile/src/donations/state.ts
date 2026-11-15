@@ -1,3 +1,5 @@
+import { getStatusLabel } from "../theme/index";
+
 export type DonationListingState = { id: string; status: string };
 export type DonationBucket = "ACTIVE" | "HISTORY";
 
@@ -14,7 +16,7 @@ export function filterDonationsByBucket<T extends { status: string }>(donations:
 }
 
 export function getDonationCardState(status: string): { statusLabel: string; showCancelAction: boolean } {
-  return { statusLabel: status, showCancelAction: canCancelDonation(status) };
+  return { statusLabel: getStatusLabel(status), showCancelAction: canCancelDonation(status) };
 }
 
 export function applyDonationStatus<T extends DonationListingState>(

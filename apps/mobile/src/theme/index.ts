@@ -76,6 +76,18 @@ export function getStatusVariant(status: string): StatusVariant {
   return "neutral";
 }
 
+const friendlyStatusLabels: Record<string, string> = {
+  PARTIALLY_RESERVED: "Partially reserved",
+  VOLUNTEER_ASSIGNED: "Volunteer assigned",
+  AWAITING_VERIFICATION: "Awaiting verification",
+  WAITING_FOR_ADMIN_VERIFICATION: "Waiting for admin verification",
+};
+
+export function getStatusLabel(status: string): string {
+  const normalized = status.trim().toUpperCase().replace(/[\s-]+/g, "_");
+  return friendlyStatusLabels[normalized] ?? status;
+}
+
 export const designTokens = { colors, spacing, radii, typography, semantic, shadows } as const;
 
 // Existing screens retain these names while shared components migrate to tokens.

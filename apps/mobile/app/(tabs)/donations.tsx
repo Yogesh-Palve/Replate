@@ -21,6 +21,7 @@ function DonationCard({ item, donor, requester, onCancel, cancelPending }: {
   item: Donation; donor: boolean; requester: boolean; onCancel: (id: string) => void; cancelPending: boolean;
 }) {
   const donationCard = getDonationCardState(item.status);
+  const longStatusLabel = donationCard.statusLabel.length > 14;
 
   return <Card>
     <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.md }}>
@@ -29,8 +30,9 @@ function DonationCard({ item, donor, requester, onCancel, cancelPending }: {
         <Text style={{ color: colors.ink, fontSize: typography.size.subtitle, lineHeight: typography.line.heading, fontWeight: typography.weight.bold }}>{item.foodName}</Text>
         <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption, marginTop: spacing.xxs }}>{item.category}{item.donor?.name ? ` · Shared by ${item.donor.name}` : ""}</Text>
       </View>
-      <Status>{donationCard.statusLabel}</Status>
+      {!longStatusLabel ? <Status>{donationCard.statusLabel}</Status> : null}
     </View>
+    {longStatusLabel ? <View style={{ flexDirection: "row", marginTop: spacing.xs }}><Status>{donationCard.statusLabel}</Status></View> : null}
     <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.md, padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.canvas }}>
       <Lucide name="package-check" size={19} color={colors.primary} accessibilityElementsHidden importantForAccessibility="no" />
       <Text style={{ color: colors.ink, fontWeight: typography.weight.bold }}>{item.availableQuantity} {item.unit}</Text>

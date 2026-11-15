@@ -29,6 +29,7 @@ test("successful cancellation updates the matching cached donation and leaves ot
 
 test("cancelled cards show the persisted status and no cancel action", () => {
   assert.deepEqual(getDonationCardState("CANCELLED"), { statusLabel: "CANCELLED", showCancelAction: false });
+  assert.deepEqual(getDonationCardState("PARTIALLY_RESERVED"), { statusLabel: "Partially reserved", showCancelAction: true });
 });
 
 test("reproduces stale AVAILABLE data overwriting a cancellation patch when an old fetch is not cancelled", async () => {
