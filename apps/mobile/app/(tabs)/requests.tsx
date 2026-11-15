@@ -6,7 +6,7 @@ import { api } from "../../src/api/client";
 import { Button, Card, EmptyState, FilterChip, IconBadge, LoadingState, Screen, SectionHeading, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { createSubmissionGuard, getApiErrorMessage } from "../../src/forms/validation";
-import { invalidateDashboard } from "../../src/dashboard/cache";
+import { invalidateDashboard, invalidateImpact } from "../../src/dashboard/cache";
 import { useToast } from "../../src/notifications/ToastProvider";
 import { theme } from "../../src/theme";
 import { colors, radii, spacing, typography } from "../../src/theme";
@@ -44,7 +44,7 @@ export default function Requests() {
         confirm: "Delivery confirmed. Thank you for receiving the donation.",
       };
       notify("success", successMessages[variables.op]);
-      await Promise.all([qc.invalidateQueries({ queryKey: ["requests"] }), qc.invalidateQueries({ queryKey: ["donations"] }), invalidateDashboard(qc, user?.role)]);
+      await Promise.all([qc.invalidateQueries({ queryKey: ["requests"] }), qc.invalidateQueries({ queryKey: ["donations"] }), invalidateDashboard(qc, user?.role), invalidateImpact(qc, user?.role)]);
     },
   });
   useEffect(() => {

@@ -29,7 +29,7 @@ async function main() {
   ok(adminLogin, "Admin login");
   if (adminLogin.data.user?.role !== "ADMIN") throw new Error("Admin login returned an unexpected role");
   const adminToken = adminLogin.data.accessToken as string;
-  for (const endpoint of ["/admin/stats", "/admin/users", "/admin/organizations", "/admin/donations", "/admin/requests"]) {
+  for (const endpoint of ["/admin/stats", "/admin/users", "/admin/organizations", "/admin/donations", "/admin/requests", "/impact/summary"]) {
     ok(await call(endpoint, { token: adminToken }), `Admin dashboard ${endpoint}`);
   }
   const forbiddenAdmin = await call("/admin/stats", { token: "" });
@@ -45,12 +45,14 @@ async function main() {
   expect(await call("/volunteer/tasks", { token: donorToken }), 403, "Donor cannot access volunteer tasks");
   ok(await call("/donations", { token: donorToken }), "Donor dashboard donations");
   ok(await call("/requests", { token: donorToken }), "Donor dashboard requests");
+  ok(await call("/impact/summary", { token: donorToken }), "Donor impact authorization");
   const ngoRegistration = await call("/auth/register", { method: "POST", body: { name: `Smoke NGO User ${suffix}`, email: `ngo-${suffix}@example.invalid`, password: testPassword, role: "NGO", organizationName: `Smoke NGO ${suffix}`, address: "1 Test Road, Local Test City" } });
   ok(ngoRegistration, "NGO registration");
   const ngoToken = ngoRegistration.data.accessToken as string;
   if ((await call("/auth/me", { token: ngoToken })).data.user?.role !== "NGO") throw new Error("NGO session role check failed");
   ok(await call("/donations", { token: ngoToken }), "NGO dashboard donations");
   ok(await call("/requests", { token: ngoToken }), "NGO dashboard requests");
+  ok(await call("/impact/summary", { token: ngoToken }), "NGO impact authorization");
   expect(await call("/volunteer/tasks", { token: ngoToken }), 403, "NGO cannot access volunteer tasks");
   const organizationId = ngoRegistration.data.user?.organization?.id as string;
   const volunteerRegistration = await call("/auth/register", { method: "POST", body: { name: `Smoke Volunteer ${suffix}`, email: `volunteer-${suffix}@example.invalid`, password: testPassword, role: "VOLUNTEER" } });
@@ -58,6 +60,7 @@ async function main() {
   const volunteerToken = volunteerRegistration.data.accessToken as string;
   if ((await call("/auth/me", { token: volunteerToken })).data.user?.role !== "VOLUNTEER") throw new Error("Volunteer session role check failed");
   ok(await call("/volunteer/tasks", { token: volunteerToken }), "Volunteer dashboard tasks");
+  ok(await call("/impact/summary", { token: volunteerToken }), "Volunteer impact authorization");
   expect(await call("/admin/stats", { token: volunteerToken }), 403, "Volunteer cannot access admin routes");
   expect(await call("/volunteer/availability", { method: "PATCH", token: donorToken, body: { available: false } }), 403, "Donor cannot change volunteer availability");
 
@@ -136,6 +139,19 @@ async function main() {
   ok(donationFinal, "Donor donation dashboard");
   if (donationFinal.data.donation?.availableQuantity !== 1 || donationFinal.data.donation?.status !== "PARTIALLY_RESERVED") throw new Error("Donation reservation quantity/status is inconsistent");
 
+  const [donorImpact, ngoImpact, volunteerImpact, adminImpact] = await Promise.all([
+    call("/impact/summary", { token: donorToken }), call("/impact/summary", { token: ngoToken }),
+    call("/impact/summary", { token: volunteerToken }), call("/impact/summary", { token: adminToken }),
+  ]);
+  [donorImpact, ngoImpact, volunteerImpact, adminImpact].forEach((result, index) => ok(result, `Role impact summary ${index + 1}`));
+  const donorSummary = donorImpact.data.summary;
+  if (donorSummary.donationsCreated !== 1 || donorSummary.completedRequests !== 1 || donorSummary.completedDeliveries !== 1 || donorSummary.estimatedMeals !== 2) throw new Error("Donor impact summary does not match the completed workflow fixture");
+  if (ngoImpact.data.summary.donationsCreated !== null || ngoImpact.data.summary.completedRequests !== 1 || ngoImpact.data.summary.completedDeliveries !== 1 || ngoImpact.data.summary.estimatedMeals !== 2) throw new Error("NGO impact summary is not correctly scoped");
+  if (volunteerImpact.data.summary.donationsCreated !== null || volunteerImpact.data.summary.completedRequests !== 1 || volunteerImpact.data.summary.completedDeliveries !== 1 || volunteerImpact.data.summary.estimatedMeals !== 2) throw new Error("Volunteer impact summary is not correctly scoped");
+  const redistributedPackets = donorSummary.redistributedByUnit?.find((unit: any) => unit.unit === "meal packets")?.quantity;
+  if (redistributedPackets !== 2) throw new Error("Impact quantity was not grouped by its original food unit");
+  if (typeof adminImpact.data.summary.donationsCreated !== "number" || adminImpact.data.summary.completedDeliveries < 1) throw new Error("Admin platform impact summary is incomplete");
+
   const concurrentNow = new Date();
   const concurrentDonationResult = await call("/donations", { method: "POST", token: donorToken, body: { foodName: `Concurrent Smoke Meals ${suffix}`, category: "Prepared meals", quantity: 3, unit: "meal packets", preparedAt: new Date(concurrentNow.getTime() - 60_000).toISOString(), collectionDeadline: new Date(concurrentNow.getTime() + 3_600_000).toISOString(), pickupAddress: "1 Test Road, Local Test City", description: "Concurrent allocation smoke test" } });
   ok(concurrentDonationResult, "Donor creates concurrent allocation fixture");
@@ -163,6 +179,7 @@ async function main() {
   console.log("Donation browse/request/approval and insufficient-quantity guard: PASS");
   console.log("Assignment accept/collect/deliver, transition guard, and NGO confirmation: PASS");
   console.log("Final request, delivery, and available-quantity consistency: PASS");
+  console.log("Role-scoped impact summaries, confirmed quantities by unit, and meal-estimate rules: PASS");
   console.log("Concurrent reservation serialization and oversubscription guard: PASS");
   console.log("Synthetic test records were retained in the database; no existing data was modified or deleted.");
 }

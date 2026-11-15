@@ -189,3 +189,10 @@ Code-level status: shared focus-triggered state updates have been removed and An
 - [ ] While signed in, trigger a genuine expired/invalid session response in a safe test session. Confirm it still surfaces an authentication error; logout-specific handling must not hide normal 401 errors.
 
 Phase 2 follow-up automated checks passed: mobile tests 34/34, API tests 8/8, workspace TypeScript, shared/API build, Android production export (1,233 modules; 2.9 MB Hermes), and `git diff --check`. These do not replace the unchecked physical-device actions above.
+
+## Phase 3 impact summary — automated verification passed
+
+- API unit tests verify meal-unit normalization and that quantities remain separated by original unit.
+- The live `smoke:workflow` test validates the impact endpoint for Donor, NGO, Volunteer, and Admin against PostgreSQL. Its unique workflow fixture confirms only the completed/NGO-confirmed two meal packets count as one completed request, one confirmed delivery, and two estimated meals for the donor, requesting NGO, and assigned volunteer. Admin receives a platform-level summary.
+- Phase 3 verification: API tests 10/10; mobile tests 36/36; workspace TypeScript; shared/API build; Android export (1,234 modules; 2.9 MB Hermes); live database workflow smoke passed.
+- Manual screen review remains pending for each role. Check that Home labels estimates and shows the actual quantity breakdown by unit; no environmental estimate is shown.

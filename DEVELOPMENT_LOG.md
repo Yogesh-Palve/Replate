@@ -1,5 +1,13 @@
 # Development Log
 
+## 2026-11-15 — Phase 3: Role-scoped impact and sustainability summary
+
+- Added authenticated `GET /impact/summary`, scoped to donor-owned listings, the signed-in NGO, assigned volunteer work, or platform totals for Admin. It queries only NGO-confirmed completed requests and confirmed deliveries. Each original unit remains a separate quantity group.
+- Home now shows role-appropriate donation/request/delivery counts, unit-grouped redistributed food, and a clearly labeled meal estimate. Meal units are limited to meal, meal packet, portion, and serving; each is estimated as one meal and unrecognized units are excluded from that estimate but retained in the breakdown. No environmental figure is shown because the database has neither standardized weight data nor a validated emissions factor. No schema migration or dependency was needed.
+- Added calculation, role-display, role-cache invalidation, and unit-preservation tests; extended the database workflow smoke to assert all four roles and an exact completed fixture.
+- Passed: API tests 10/10; mobile tests 36/36; workspace TypeScript; shared/API build; Android production export (1,234 modules; 2.9 MB Hermes); full live database workflow smoke including authorization, quantity allocation, delivery confirmation and impact scoping.
+- Impact view still needs manual appearance review on the four physical-device role sessions; the existing Android phone is needed for the QR camera workflow in Phase 4.
+
 ## 2026-11-15 — Phase 2 follow-up: button contrast, donor dashboard refresh, logout race
 
 - Root cause 1: shared `Button` applied green foreground whenever `secondary` was set, even when `destructive` had changed the surface to red. Added a centralized danger-action palette (`#B42318` with white foreground) and made destructive styling take precedence for label, icon, and spinner. This fixes Cancel Listing, Logout, Decline Request, and Cancel Request consistently.

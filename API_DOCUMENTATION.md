@@ -37,6 +37,12 @@ Admin provisioning is a server CLI task (`npm run admin:bootstrap -w @replate/ap
 - `GET /admin/stats`, `/admin/users`, `/admin/organizations`, `/admin/donations`, `/admin/requests` (ADMIN).
 - `PATCH /admin/organizations/:id/verify` `{verified:boolean}`.
 
+## Impact summary
+
+- `GET /impact/summary` (DONOR, NGO, VOLUNTEER, ADMIN) returns role-scoped `summary` data: `donationsCreated` (DONOR's own or ADMIN platform total; `null` for NGO/VOLUNTEER), `redistributedByUnit`, `completedRequests`, `completedDeliveries`, and `estimatedMeals`.
+- Redistribution includes only requests in `COMPLETED` with a `CONFIRMED` delivery. Quantities remain grouped by the donation's original `unit`; unlike units are never added together. Donor scope follows `Donation.donorId`, NGO scope follows its organization, Volunteer scope follows its assignments, and Admin scope is platform-wide.
+- Meal estimates include only units normalized to meal, meal packet, portion, or serving (one such unit equals one estimated meal); other unit quantities are not converted. The response includes `mealEstimateAssumption` so clients can label the estimate. No emissions figure is returned because consistent food weights and an approved emissions factor are not stored.
+
 Status values and transition rules are enforced by the API service. All IDs are UUIDs. See route source for exact response properties.
 
 Donation states are `AVAILABLE`, `PARTIALLY_RESERVED`, `FULLY_RESERVED`, `EXPIRED`, and `CANCELLED`. Request states are `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, `VOLUNTEER_ASSIGNED`, `COLLECTED`, `DELIVERED`, and `COMPLETED`. Expired listings are hidden from NGO browsing and approvals reject requests after the deadline.

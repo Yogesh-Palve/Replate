@@ -4,7 +4,7 @@ RePlate is a cross-platform food surplus donation and redistribution app for don
 
 ## Current milestone
 
-Phase 2's mobile UI redesign is implemented across authentication and all four roles. It retains the existing API-backed flows and adds an NGO donation detail/request screen plus clearer live-data dashboards and workflow filters. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for phase status and [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) for checks and device-test limits. The API enforces role permissions and transactional quantity allocation.
+Phases 1–3 are implemented: shared RePlate branding, the four-role mobile UI redesign, and a database-backed impact summary in Home. The Phase 3 summary counts food only after NGO confirmation, preserves original units, and labels meal-equivalent estimates. Environmental impact is omitted because standardized food weights and validated emissions factors are not available. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for roadmap status and [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) for checks and device-test limits. The API enforces role permissions and transactional quantity allocation. QR handover verification and final CPAD preparation remain in progress.
 
 ## Requirements
 

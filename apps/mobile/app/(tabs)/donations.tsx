@@ -7,7 +7,7 @@ import { api } from "../../src/api/client";
 import { Button, Card, DateTimeField, EmptyState, Field, FilterChip, IconBadge, LoadingState, Message, Screen, SectionHeading, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { applyDonationStatus, filterDonationsByBucket, getDonationCardState, type DonationBucket } from "../../src/donations/state";
-import { invalidateDashboard } from "../../src/dashboard/cache";
+import { invalidateDashboard, invalidateImpact } from "../../src/dashboard/cache";
 import { clearFormError, createSubmissionGuard, getApiErrorMessage, validateDonation, type DonationValues, type FormErrors } from "../../src/forms/validation";
 import { useToast } from "../../src/notifications/ToastProvider";
 import { colors, radii, spacing, typography } from "../../src/theme";
@@ -92,7 +92,7 @@ export default function Donations() {
     onSuccess: async cancelled => {
       await qc.cancelQueries({ queryKey: ["donations"] });
       qc.setQueriesData<Donation[]>({ queryKey: ["donations"] }, current => applyDonationStatus(current, cancelled.id, cancelled.status));
-      await Promise.all([qc.invalidateQueries({ queryKey: ["donations"] }), qc.invalidateQueries({ queryKey: ["requests"] }), qc.invalidateQueries({ queryKey: ["admin"] }), invalidateDashboard(qc, "DONOR")]);
+      await Promise.all([qc.invalidateQueries({ queryKey: ["donations"] }), qc.invalidateQueries({ queryKey: ["requests"] }), qc.invalidateQueries({ queryKey: ["admin"] }), invalidateDashboard(qc, "DONOR"), invalidateImpact(qc, "DONOR")]);
     },
   });
   const cancelGuard = useRef(createSubmissionGuard()).current;
@@ -131,7 +131,7 @@ export default function Donations() {
     onSuccess: async () => {
       setForm(false); notify("success", "Donation published successfully."); setFields(emptyForm);
       setPreparedDate(null); setPreparedTime(null); setDeadlineDate(null); setDeadlineTime(null); setFormErrors({});
-      await Promise.all([qc.invalidateQueries({ queryKey: ["donations"] }), invalidateDashboard(qc, "DONOR")]);
+      await Promise.all([qc.invalidateQueries({ queryKey: ["donations"] }), invalidateDashboard(qc, "DONOR"), invalidateImpact(qc, "DONOR")]);
     },
   });
   const submitDonation = () => {

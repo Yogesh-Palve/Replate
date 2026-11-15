@@ -2,14 +2,14 @@
 
 ## Objective and guardrails
 
-Elevate the existing RePlate monorepo into a polished food redistribution product while preserving the working Expo, Express, PostgreSQL, and Prisma architecture. Phase 1 and the user-approved Phase 2 are complete for implementation and automated checks. Phase 3 and later product features have not been started and require their own approval.
+Elevate the existing RePlate monorepo into a polished food redistribution product while preserving the working Expo, Express, PostgreSQL, and Prisma architecture. Phases 1 and 2 are complete. The user has authorized Phases 3, 4, and 5 to proceed autonomously; the only planned pause is for physical-device QR/camera verification after Phase 4 automated work is complete.
 
 - Keep role authorization, validation, transactional reservations, notification behavior, native pickers, and existing navigation working.
 - Keep PostgreSQL data and migrations non-destructive. Any future schema changes are additive, reviewed, and tested against existing records.
 - Prefer shared components and design tokens over screen-specific duplication. Avoid new dependencies unless an existing package cannot satisfy the requirement.
 - Use real API/database data for product metrics and workflow decisions. Do not expose credentials, OTPs, or other secrets in logs or normal responses.
 - Treat food safety separately from deadline urgency. Do not label food as safe based on an urgency score.
-- At the end of each phase, update this plan, development log, testing/documentation, run relevant checks, report device-test limits, and wait for approval.
+- At the end of each phase, update this plan, development log, testing/documentation, run relevant checks, and record the commit. Do not claim device checks that were not observed.
 
 ## Repository and architecture review
 
@@ -48,8 +48,7 @@ The mobile app uses Expo SDK 58, React Native 0.88, React 19, Expo Router, TanSt
 | A logo that looks good in a large view may fail at launcher size | Design a simple high-contrast mark; create 1024px PNG icon variants and inspect at small sizes before configuration. |
 | Native splash/icon config will not appear in Expo Go | Verify Expo config and Android export now; reserve device/release-build inspection for a build that includes native assets. |
 | Adding analytics can double count partial reservations or deliveries | In Phase 3, derive redistributed quantities from completed requests/delivery confirmation, not approved reservations; test calculations against API/database fixtures. |
-| OTPs add sensitive state and concurrency/security requirements | In Phase 4, store only keyed hashes, enforce expiry/attempt limits and atomic one-time consumption, and audit transitions without logging code values. |
-| Urgency could be confused with food safety | Compute urgency from server time and collection deadline; state explicitly that urgency is logistical and says nothing about food safety. |
+| QR tokens add sensitive state and concurrency/security requirements | In Phase 4, store only keyed hashes, enforce expiry and atomic one-time consumption, and never log token values. |
 | Existing operational data must survive future schema work | Use additive migrations, inspect migration status, and never reset/drop user data. |
 
 ## Phase 1 — Branding and design system (complete)
@@ -86,38 +85,31 @@ Preserve endpoint contracts, role visibility, form validation, loading/error/toa
 
 **Exit gate:** Code and automated/export checks are complete. Device-only checks remain for the user's phone; do not claim those until observed. No Phase 3 work has begun.
 
-## Phase 3 — Impact and sustainability dashboard (approval required)
+## Phase 3 — Impact dashboard (complete)
 
-### Data definitions
+### Data definitions and delivered scope
 
 - Platform and donor redistributed quantity: sum `Request.quantity` only for completed requests, grouped by the donation's donor where needed.
 - NGO received quantity: completed request quantities for the NGO's organization.
 - Volunteer contribution: quantities for completed requests assigned to that volunteer, with delivery confirmation.
 - Completed delivery count: confirmed/completed deliveries, counted once per assignment/request.
-- Monthly trends: group confirmed delivery events using delivery confirmation timestamps and a documented timezone boundary.
-- Active NGOs/volunteers: define “active” from existing account/profile data; do not imply recent activity unless an activity window is actually implemented.
+- Donation-created counts are scoped to the authenticated donor; NGO, volunteer, and admin views use their own permitted summaries.
 
-Add efficient role-scoped aggregation endpoints, typed responses, loading/empty/error states, and tests for partial requests, cancelled/rejected requests, incomplete deliveries, units, and double-counting. Do not hardcode metrics or infer meals saved without an approved defensible conversion formula.
+Delivered a role-scoped API and dashboard backed by completed requests with confirmed deliveries. Quantities are grouped by their original unit to avoid adding unlike units. A meal estimate is shown only for recognized meal/portion/serving units at one meal per unit, with the assumption disclosed. Environmental estimates are omitted because the current schema has no defensible standardized weights or emissions factors. No migration was required.
 
-**Exit gate:** database-backed calculations reconcile with source rows; role access is tested; dashboard values and units are documented. Stop for user review.
+API and mobile tests, TypeScript/build checks, the live four-role workflow smoke, and Android production export passed. Phase 3 is committed after final plan reconciliation.
 
-## Phase 4 — QR/OTP handover verification (approval required)
+## Phase 4 — QR collection verification (authorized; in progress)
 
-Extend the existing assignment/delivery state machine rather than creating a parallel workflow. Define who receives pickup and delivery codes, how a volunteer submits them, and how an authorized donor/NGO verifies them. Use server-generated cryptographically random codes; persist only keyed hashes; include expiry, atomic one-time use, attempt limits/rate limiting, role and assignment checks, timestamps, and auditable transitions. Never return secrets in ordinary task/dashboard responses or logs. Add a manual OTP entry path; add QR scanning only if it fits the SDK 58 device permission/dependency model.
+Extend the existing assignment/collection state machine: the donor generates a short-lived QR for an accepted volunteer assignment, and that assigned volunteer scans it to mark collection. The server issues a cryptographically random token, stores only a keyed hash, checks donor ownership and volunteer assignment, expiry and one-time use, and consumes the token atomically with the existing collection transition. QR plaintext is returned only to the donor who generated it and is never logged. Existing delivery and NGO receipt confirmation continue unchanged. Use SDK 58 compatible camera/QR packages and an additive migration only if required.
 
-Use additive Prisma migrations and test valid, invalid, expired, reused, over-limit, unauthorized, concurrent, and repeated-transition cases, plus rollback and existing lifecycle compatibility. Stop for user review.
+Test valid, malformed, wrong-assignment, expired, reused, unauthorized, concurrent, and repeated-transition cases and preserve existing records. Complete API/mobile checks, export and documentation before asking the user to test camera permission and QR scanning on the physical Android phone. Wait for the observed result before final polish.
 
-## Phase 5 — Deadline urgency (approval required)
-
-Derive urgency on the server from the actual collection deadline and server clock. Document the urgent/expiring-soon/available thresholds, use UTC instants for comparisons, and include remaining time in a client-friendly representation. Support NGO sort/filter and clear badges; show donor deadlines and countdowns. Continue to block expired requests and approvals server-side, keep quantities transactional, and distinguish urgency from food safety. Avoid background-job infrastructure unless later evidence requires it.
-
-Test threshold boundaries, timezone/DST serialization, expired listings, approved reservations, filters, and deadline transitions. Stop for user review.
-
-## Phase 6 — Final polish and CPAD preparation (approval required)
+## Phase 5 — Final polish and CPAD preparation (authorized; after QR device check)
 
 Run complete four-role workflow regression, concurrency/security checks, Expo Doctor/dependency validation, dependency audit review, Android production export/build, responsive Android visual/device checks, accessibility/performance review, and a documentation consistency pass. Verify the final journey: Donor → NGO request → Donor approval → Volunteer assignment → pickup verification → collection → delivery verification → NGO confirmation → updated impact metrics. Do not report physical-device verification that was not performed.
 
-Prepare accurate README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMENT_LOG, and demonstration instructions. Stop for final user review.
+Prepare accurate README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMENT_LOG, architecture diagram, demonstration instructions, and a screenshot capture checklist. Do not fabricate physical-device screenshots. Record any remaining device-only limitations and then report the final status.
 
 ## Phase 1 progress log
 
@@ -126,7 +118,7 @@ Prepare accurate README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMEN
 - [x] Create original logo, app icon, and splash assets.
 - [x] Implement design tokens and apply them to shared primitives, branding, toast, and icons.
 - [x] Verify automated checks and document actual results (mobile/API tests, workspace TypeScript, Expo SDK check/Doctor, Expo config, Android export).
-- [x] Pause for approval before Phase 2; no later phase or new feature is started automatically.
+- [x] Receive approval for Phase 2 and later autonomous milestones; preserve the physical QR scan as the Phase 4 pause.
 
 **Phase 1 status: complete for code/config/export.** Native launcher/splash visuals still require a native Android build/device and remain unchecked in `TESTING.md`.
 
@@ -141,4 +133,15 @@ Prepare accurate README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMEN
 - [x] Automated checks: TypeScript; API tests 8/8; mobile tests 27/27; shared/API build; Android export (1,232 modules, 2.9 MB Hermes); diff whitespace check.
 - [ ] Physical Android visual, native picker, font scale, and complete cross-role navigation/workflow check (manual, pending).
 
-**Phase 2 status: implementation and automated checks complete; physical-device visual validation pending. Phase 3 remains unstarted.**
+**Phase 2 status: implementation and automated checks complete; physical-device visual validation pending.**
+
+## Phase 3 progress log
+
+- [x] Implement authenticated, role-scoped impact summary API using completed requests and confirmed deliveries.
+- [x] Present role-appropriate donation/redistribution metrics and unit-aware quantity breakdowns on Home.
+- [x] Restrict meal estimates to recognized food-serving units and disclose the assumption; omit unsupported environmental estimates.
+- [x] Invalidate impact data after relevant donation and request mutations.
+- [x] Test calculations, role scope, query keys, and live workflow metrics; run TypeScript, API/mobile tests, build, Android export, and live smoke.
+- [x] Update README, API_DOCUMENTATION, DATABASE_SCHEMA, TESTING, DEVELOPMENT_LOG, and this plan.
+
+**Phase 3 status: complete; role-scoped data comes from the live API. No database schema change was needed.**

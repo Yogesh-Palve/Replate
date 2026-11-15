@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { QueryClient } from "@tanstack/react-query";
-import { dashboardQueryKey, invalidateDashboard, shouldRefreshDashboardOnFocus } from "./cache";
+import { dashboardQueryKey, impactQueryKey, invalidateDashboard, invalidateImpact, shouldRefreshDashboardOnFocus } from "./cache";
 
 test("dashboard invalidation targets the donor role cache without changing other roles", async () => {
   const client = new QueryClient();
@@ -10,6 +10,16 @@ test("dashboard invalidation targets the donor role cache without changing other
   await invalidateDashboard(client, "DONOR");
   assert.equal(client.getQueryState(dashboardQueryKey("DONOR"))?.isInvalidated, true);
   assert.equal(client.getQueryState(dashboardQueryKey("NGO"))?.isInvalidated, false);
+  client.clear();
+});
+
+test("impact invalidation is role-specific after account-scoped mutations", async () => {
+  const client = new QueryClient();
+  client.setQueryData(impactQueryKey("DONOR"), { donationsCreated: 1 });
+  client.setQueryData(impactQueryKey("NGO"), { completedRequests: 1 });
+  await invalidateImpact(client, "DONOR");
+  assert.equal(client.getQueryState(impactQueryKey("DONOR"))?.isInvalidated, true);
+  assert.equal(client.getQueryState(impactQueryKey("NGO"))?.isInvalidated, false);
   client.clear();
 });
 

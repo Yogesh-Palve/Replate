@@ -19,3 +19,7 @@ UUID primary keys, unique email and organization/user relations, nonnegative qua
 ## Concurrency
 
 Approval uses a serializable Prisma transaction and `SELECT ... FOR UPDATE` on the donation row, checks current request state and remaining quantity, then updates reservation/status and creates the assignment/delivery. Concurrent over-allocation fails rather than silently oversubscribing. Transaction retries are limited; callers may retry a serialization conflict.
+
+## Impact calculations
+
+Phase 3 does not add tables or columns. The authenticated `GET /impact/summary` endpoint aggregates existing Donation, Request, Assignment, and Delivery rows. It counts redistribution only after the request is `COMPLETED` and the delivery is `CONFIRMED`, and groups quantity by the original donation unit. Meal estimates accept only meal, meal-packet, portion, and serving units at one estimated meal per unit; other units remain unconverted. Environmental impact is omitted because the schema has no standardized food weight or validated emissions factor.

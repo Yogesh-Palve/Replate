@@ -4,10 +4,11 @@ import { Link, useFocusEffect } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../src/api/client";
-import { Button, Card, LoadingState, MetricCard, Screen, Status, Title } from "../../src/components/ui";
+import { Button, Card, EmptyState, LoadingState, MetricCard, Screen, SectionHeading, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { getDashboardMetrics } from "../../src/dashboard/summary";
-import { dashboardQueryKey, shouldRefreshDashboardOnFocus } from "../../src/dashboard/cache";
+import { dashboardQueryKey, impactQueryKey, shouldRefreshDashboardOnFocus } from "../../src/dashboard/cache";
+import { getImpactMetrics, type ImpactSummary } from "../../src/dashboard/impact";
 import { getApiErrorMessage } from "../../src/forms/validation";
 import { useToast } from "../../src/notifications/ToastProvider";
 import { colors, radii, spacing, typography } from "../../src/theme";
@@ -25,6 +26,7 @@ export default function Home() {
   const role = user?.role ?? "DONOR";
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => dashboardQueryKey(role), [role]);
+  const impactKey = useMemo(() => impactQueryKey(role), [role]);
   const query = useQuery({
     queryKey,
     enabled: Boolean(user && !signingOut),
@@ -35,10 +37,17 @@ export default function Home() {
       return { donations: donationResponse.data.donations, requests: requestResponse.data.requests };
     },
   });
+  const impactQuery = useQuery({
+    queryKey: impactKey,
+    enabled: Boolean(user && !signingOut),
+    queryFn: async ({ signal }) => (await api.get("/impact/summary", { signal })).data.summary as ImpactSummary,
+  });
   useFocusEffect(useCallback(() => {
-    const state = queryClient.getQueryState(queryKey);
-    if (shouldRefreshDashboardOnFocus(state)) void queryClient.invalidateQueries({ queryKey, refetchType: "active" });
-  }, [queryClient, queryKey]));
+    for (const key of [queryKey, impactKey]) {
+      const state = queryClient.getQueryState(key);
+      if (shouldRefreshDashboardOnFocus(state)) void queryClient.invalidateQueries({ queryKey: key, refetchType: "active" });
+    }
+  }, [impactKey, queryClient, queryKey]));
   useEffect(() => {
     if (query.isError && user && !signingOut) notify("error", getApiErrorMessage(query.error, "We could not load your latest activity."), { duration: null });
   }, [notify, query.error, query.isError, signingOut, user]);
@@ -76,6 +85,26 @@ export default function Home() {
       : <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
         {metrics.map(metric => <View key={metric.label} style={{ width: "48%", flexGrow: 1, minWidth: 120 }}><MetricCard {...metric} /></View>)}
       </View>}
+
+    <SectionHeading title={role === "ADMIN" ? "Platform impact" : "Your community impact"} subtitle="Confirmed food redistribution from RePlate records." />
+    {impactQuery.isLoading ? <Card><LoadingState label="Loading impact summary" /></Card> : impactQuery.isError
+      ? <Card><EmptyState icon="cloud-alert" title="Impact data unavailable" description="Check your connection and retry." action={<Button title="Retry impact summary" secondary icon="refresh-cw" onPress={() => { void impactQuery.refetch(); }} />} /></Card>
+      : impactQuery.data ? <>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
+          {getImpactMetrics(role, impactQuery.data).map(metric => <View key={metric.label} style={{ width: "48%", flexGrow: 1, minWidth: 120 }}><MetricCard {...metric} /></View>)}
+        </View>
+        <SectionHeading title="Food redistributed" subtitle="Quantities stay grouped by their recorded unit." />
+        <Card>
+          {impactQuery.data.redistributedByUnit.length === 0
+            ? <EmptyState icon="package-open" title="No confirmed redistribution yet" description="Food is counted after the receiving NGO confirms delivery." />
+            : impactQuery.data.redistributedByUnit.map(item => <View key={item.unit} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <Text style={{ color: colors.secondaryText, fontSize: typography.size.small }}>{item.unit}</Text>
+              <Text style={{ color: colors.ink, fontSize: typography.size.body, fontWeight: typography.weight.bold }}>{item.quantity.toLocaleString()}</Text>
+            </View>)}
+          <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption, lineHeight: typography.line.caption, marginTop: spacing.md }}>{impactQuery.data.mealEstimateAssumption} Estimated meal totals exclude other units.</Text>
+          <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption, lineHeight: typography.line.caption, marginTop: spacing.xs }}>Environmental impact is not estimated because RePlate does not record standardized food weights or a validated emissions factor.</Text>
+        </Card>
+      </> : null}
 
     {role === "ADMIN" ? <Link href="/(tabs)/admin" asChild><Button title="Review organizations and activity" secondary icon="shield-check" onPress={() => {}} /></Link> : null}
     <View style={{ alignItems: "center", flexDirection: "row", justifyContent: "center", gap: spacing.xs, marginTop: spacing.xl, marginBottom: spacing.sm }}>
