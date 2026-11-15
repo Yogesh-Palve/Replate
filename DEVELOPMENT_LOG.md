@@ -1,5 +1,20 @@
 # Development Log
 
+## 2026-11-15 — Donation cancellation state and eligibility
+
+- Fixed donor donation cards to show **Cancel listing** only for `AVAILABLE` and `PARTIALLY_RESERVED` donations. On successful cancellation, the API response updates matching React Query donation-list caches immediately, then donation, request, and admin queries are invalidated. The success toast now reads “Donation listing cancelled successfully.”
+- The cancellation endpoint now permits only available/partially reserved listings and returns `409 INVALID_TRANSITION` for cancelled, expired, or fully reserved listings. Its existing row lock and open-request guard remain in place, so pending or otherwise active requests prevent cancellation. Cancellation changes status only; it does not alter quantities or resolved request records.
+- Added regression tests for allowed status, pending/active request rejection, repeat cancellation rejection, visible-action eligibility, and immediate cached status updates. A database-backed smoke command was added in the follow-up investigation below.
+
+## 2026-11-15 — Cancellation persistence and stale-query investigation
+
+- Reproduced the API/database portion with a new donor donation: the endpoint returned `donation.status = CANCELLED`, PostgreSQL stored `CANCELLED`, and a fresh donor donation-list request returned `CANCELLED`. Repeating cancellation returned `409 INVALID_TRANSITION`.
+- A verified test NGO created a pending request against a second test donation. Cancellation returned `409 ACTIVE_REQUESTS`; PostgreSQL status stayed `AVAILABLE` and `availableQuantity` stayed unchanged. After the test NGO cancelled its pending request, donor cancellation succeeded. An approved request reserved two units, blocked donation cancellation, and kept stock unchanged until NGO cancellation restored the reservation; only then could the donor cancel. Test accounts/records use `.invalid` addresses and remain in the local database; no existing records were changed or removed.
+- Source review found the earlier mobile handler accepted the response through an unchecked type cast and fired query invalidations without first cancelling a donation-list fetch already in progress. Such a stale `AVAILABLE` response could replace the status patch. The client now validates the response donation ID and `CANCELLED` status, cancels in-flight `donations` queries before patching all list caches, then awaits donation/request/admin invalidation. Donation cards render their status and cancellation action from one tested presentation function.
+- The React Query regression test reproduces the UI bug when an older in-flight `AVAILABLE` list response overwrites the cancellation cache patch; the fixed sequence cancels that request before patching and keeps `CANCELLED` rendered.
+- Passed after the follow-up: API tests 8/8, mobile tests 19/19 (including both the reproduced stale-fetch failure sequence and its fixed sequence), workspace TypeScript checks, shared/API build, database-backed cancellation smoke, and Android export (1,227 modules; 2.9 MB Hermes bundle).
+- The workstation has no `adb` or emulator, so the physical screen itself was not reproduced or verified here. Refresh Expo Go from the running RePlate Metro project and confirm the visible card says `CANCELLED` with no **Cancel listing** action; see the final response for the exact check.
+
 ## 2026-11-15 — Shared mobile notifications and role tab icons
 
 - Added a global, safe-area-aware notification banner with slide animation, success/error/warning/info styles, close action, 4.5-second default dismissal, persistent API errors, replacement/deduplication, and timer/animation cleanup. Authentication and Donor, NGO, Volunteer, and Admin actions now use consistent feedback; field validation remains inline.

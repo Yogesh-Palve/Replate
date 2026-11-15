@@ -6,6 +6,7 @@ import { Button, Card, DateTimeField, Field, Message, Screen, Status, Title } fr
 import { useAuth } from "../../src/context/AuthContext";
 import { clearFormError, createSubmissionGuard, getApiErrorMessage, validateDonation, validateRequestQuantity, type DonationValues, type FormErrors } from "../../src/forms/validation";
 import { useToast } from "../../src/notifications/ToastProvider";
+import { applyDonationStatus, getDonationCardState } from "../../src/donations/state";
 import { theme } from "../../src/theme";
 
 type Donation = {
@@ -28,6 +29,7 @@ function DonationCard({
 }) {
   const [quantity, setQuantity] = useState("1");
   const [quantityError, setQuantityError] = useState("");
+  const donationCard = getDonationCardState(item.status);
   const request = () => {
     const validationError = validateRequestQuantity(quantity, item.availableQuantity);
     setQuantityError(validationError ?? "");
@@ -39,11 +41,11 @@ function DonationCard({
     <Text style={{ color: theme.muted, marginTop: 5 }}>{item.category} · {item.availableQuantity} {item.unit} available</Text>
     <Text style={{ color: theme.text, marginTop: 8 }}>{item.pickupAddress}</Text>
     <Text style={{ color: theme.muted, marginTop: 5 }}>Collect by {new Date(item.collectionDeadline).toLocaleString()}</Text>
-    <Status>{item.status}</Status>
+    <Status>{donationCard.statusLabel}</Status>
     {donor
       ? <>
         <Text style={{ color: theme.muted }}>Prepared quantity: {item.quantity} {item.unit}</Text>
-        <Button title="Cancel listing" secondary onPress={() => onCancel(item.id)} disabled={cancelPending} loading={cancelPending} />
+        {donationCard.showCancelAction && <Button title="Cancel listing" secondary onPress={() => onCancel(item.id)} disabled={cancelPending} loading={cancelPending} />}
       </>
       : requester ? <View style={{ marginTop: 8 }}>
         <Field label={`How many ${item.unit}?`} value={quantity} onChangeText={value => { setQuantity(value); setQuantityError(""); }} keyboardType="number-pad" error={quantityError} />
@@ -78,7 +80,26 @@ export default function Donations() {
   });
 
   const requestMutation = useMutation({ mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => api.post(`/donations/${id}/requests`, { quantity }) });
-  const cancelMutation = useMutation({ mutationFn: (id: string) => api.patch(`/donations/${id}/cancel`) });
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await api.patch(`/donations/${id}/cancel`);
+      const cancelled = response.data?.donation as Donation | undefined;
+      if (cancelled?.id !== id || cancelled.status !== "CANCELLED") {
+        throw new Error("The server did not confirm that this donation was cancelled. Refresh the list and try again.");
+      }
+      return cancelled;
+    },
+    onSuccess: async cancelled => {
+      // Stop any list fetch started before the cancellation response from restoring stale AVAILABLE data.
+      await qc.cancelQueries({ queryKey: ["donations"] });
+      qc.setQueriesData<Donation[]>({ queryKey: ["donations"] }, current => applyDonationStatus(current, cancelled.id, cancelled.status));
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["donations"] }),
+        qc.invalidateQueries({ queryKey: ["requests"] }),
+        qc.invalidateQueries({ queryKey: ["admin"] }),
+      ]);
+    },
+  });
   const requestGuard = useRef(createSubmissionGuard()).current;
   const cancelGuard = useRef(createSubmissionGuard()).current;
   useEffect(() => {
@@ -104,8 +125,7 @@ export default function Donations() {
       void cancelGuard(async () => {
         try {
           await cancelMutation.mutateAsync(id);
-          notify("success", "Donation listing cancelled.");
-          void qc.invalidateQueries({ queryKey: ["donations"] });
+          notify("success", "Donation listing cancelled successfully.");
         } catch (error) {
           notify("error", getApiErrorMessage(error, "The listing could not be cancelled. Try again."), { duration: null });
         }
