@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "expo-router";
 import { Switch, Text, View } from "react-native";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,12 +12,13 @@ import { useToast } from "../../src/notifications/ToastProvider";
 import { filterTasks, type TaskFilter } from "../../src/tasks/state";
 import { colors, spacing, theme, typography } from "../../src/theme";
 
-type TaskAction = { id: string; op: "accept" | "collect" | "decline" | "deliver" };
+type TaskAction = { id: string; op: "accept" | "decline" | "deliver" };
 
 export default function Tasks() {
   const { user, signingOut } = useAuth();
   const notify = useToast();
   const qc = useQueryClient();
+  const router = useRouter();
   const profile = (user as any)?.volunteerProfile;
   const [available, setAvailable] = useState(profile?.available ?? true);
   const [filter, setFilter] = useState<TaskFilter>("ALL");
@@ -29,7 +31,7 @@ export default function Tasks() {
   const action = useMutation({
     mutationFn: ({ id, op }: TaskAction) => api.patch(`/assignments/${id}/${op}`),
     onSuccess: async (_result, variables) => {
-      const successMessages = { accept: "Assignment accepted.", collect: "Collection recorded.", decline: "Assignment declined.", deliver: "Delivery marked complete." };
+      const successMessages = { accept: "Assignment accepted.", decline: "Assignment declined.", deliver: "Delivery marked complete." };
       notify("success", successMessages[variables.op]);
       await Promise.all([qc.invalidateQueries({ queryKey: ["tasks"] }), qc.invalidateQueries({ queryKey: ["requests"] }), invalidateDashboard(qc, "VOLUNTEER")]);
     },
@@ -80,7 +82,7 @@ export default function Tasks() {
             <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, marginTop: spacing.md }}><Lucide name="map-pin" size={17} color={colors.secondaryText} accessibilityElementsHidden importantForAccessibility="no" /><Text style={{ color: colors.ink, flex: 1, lineHeight: typography.line.small }}>{task.request.donation.pickupAddress}</Text></View>
             <Text style={{ color: colors.secondaryText, marginTop: spacing.sm }}>Quantity: {task.request.quantity} {task.request.donation.unit}</Text>
             {task.status === "OPEN" && <Button title="Accept task" icon="handshake" onPress={() => runAction({ id: task.id, op: "accept" })} disabled={action.isPending} loading={buttonBusy(task.id, "accept")} />}
-            {task.status === "ACCEPTED" && <><Button title="Mark food collected" icon="package-check" onPress={() => runAction({ id: task.id, op: "collect" })} disabled={action.isPending} loading={buttonBusy(task.id, "collect")} /><Button title="Decline task" secondary icon="x" onPress={() => runAction({ id: task.id, op: "decline" })} disabled={action.isPending} loading={buttonBusy(task.id, "decline")} /></>}
+            {task.status === "ACCEPTED" && <><Button title="Scan donor collection QR" icon="scan-line" onPress={() => router.push({ pathname: "/scan-collection", params: { assignmentId: task.id } })} disabled={action.isPending} /><Button title="Decline task" secondary icon="x" onPress={() => runAction({ id: task.id, op: "decline" })} disabled={action.isPending} loading={buttonBusy(task.id, "decline")} /></>}
             {task.status === "COLLECTED" && <Button title="Mark delivered" icon="truck" onPress={() => runAction({ id: task.id, op: "deliver" })} disabled={action.isPending} loading={buttonBusy(task.id, "deliver")} />}
           </Card>)}
         </>}

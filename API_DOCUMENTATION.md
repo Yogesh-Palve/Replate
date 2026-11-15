@@ -29,7 +29,9 @@ Admin provisioning is a server CLI task (`npm run admin:bootstrap -w @replate/ap
 - `PATCH /requests/:id/cancel` (requesting NGO; pending or approved under guarded release rules).
 - `GET /volunteer/tasks` (VOLUNTEER) lists unassigned work and own work.
 - `PATCH /volunteer/availability` `{available:boolean}`.
-- `PATCH /assignments/:id/accept`, `/decline`, `/collect`, `/deliver` (assigned volunteer; sequential transitions; decline is allowed before collection).
+- `PATCH /assignments/:id/accept`, `/decline`, `/deliver` (assigned volunteer; sequential transitions; decline is allowed before collection).
+- `POST /assignments/:id/collection-qr` (owning DONOR, after volunteer acceptance) issues or rotates a 10-minute, one-use QR payload and returns `{qrPayload,expiresAt}`. The payload is intended only for display to that assignment's volunteer.
+- `PATCH /assignments/:id/collect` (assigned VOLUNTEER) requires `{token}` from the donor QR. Token consumption and the existing assignment/delivery/request collection transition are atomic. Invalid, expired, revoked, or reused tokens return 409; a different volunteer cannot redeem the assignment's token.
 - `PATCH /requests/:id/confirm-delivery` (requesting NGO; delivered only).
 
 ## Administration

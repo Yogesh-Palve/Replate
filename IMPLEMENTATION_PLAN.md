@@ -7,7 +7,7 @@ Elevate the existing RePlate monorepo into a polished food redistribution produc
 - Keep role authorization, validation, transactional reservations, notification behavior, native pickers, and existing navigation working.
 - Keep PostgreSQL data and migrations non-destructive. Any future schema changes are additive, reviewed, and tested against existing records.
 - Prefer shared components and design tokens over screen-specific duplication. Avoid new dependencies unless an existing package cannot satisfy the requirement.
-- Use real API/database data for product metrics and workflow decisions. Do not expose credentials, OTPs, or other secrets in logs or normal responses.
+- Use real API/database data for product metrics and workflow decisions. Do not expose credentials, QR tokens, or other secrets in logs or ordinary responses.
 - Treat food safety separately from deadline urgency. Do not label food as safe based on an urgency score.
 - At the end of each phase, update this plan, development log, testing/documentation, run relevant checks, and record the commit. Do not claim device checks that were not observed.
 
@@ -83,7 +83,7 @@ Preserve endpoint contracts, role visibility, form validation, loading/error/toa
 
 **Completed:** The six internal milestones are implemented in sequence. Shared UI and navigation are consistent; live API data backs dashboards and monitoring; NGO detail/request uses existing routes and validation; volunteer assignment state filters and current workflow actions are retained. TypeScript, API/mobile automated tests, shared/API build, and Android production export passed. Expo dependency check used its local bundled map; network lookup was unavailable. Expo Doctor could not run because the CLI was absent locally and npm registry access was unavailable. Physical-device layout, native picker, and end-to-end role navigation checks remain unchecked in `TESTING.md`.
 
-**Exit gate:** Code and automated/export checks are complete. Device-only checks remain for the user's phone; do not claim those until observed. No Phase 3 work has begun.
+**Exit gate:** Phase 2 code and automated/export checks are complete. Device-only checks remain for the user's phone; do not claim those until observed. Phase 3 begins after Phase 2 completion.
 
 ## Phase 3 — Impact dashboard (complete)
 
@@ -99,11 +99,11 @@ Delivered a role-scoped API and dashboard backed by completed requests with conf
 
 API and mobile tests, TypeScript/build checks, the live four-role workflow smoke, and Android production export passed. Phase 3 is committed after final plan reconciliation.
 
-## Phase 4 — QR collection verification (authorized; in progress)
+## Phase 4 — QR collection verification (implementation and automated checks complete; physical-device verification pending)
 
 Extend the existing assignment/collection state machine: the donor generates a short-lived QR for an accepted volunteer assignment, and that assigned volunteer scans it to mark collection. The server issues a cryptographically random token, stores only a keyed hash, checks donor ownership and volunteer assignment, expiry and one-time use, and consumes the token atomically with the existing collection transition. QR plaintext is returned only to the donor who generated it and is never logged. Existing delivery and NGO receipt confirmation continue unchanged. Use SDK 58 compatible camera/QR packages and an additive migration only if required.
 
-Test valid, malformed, wrong-assignment, expired, reused, unauthorized, concurrent, and repeated-transition cases and preserve existing records. Complete API/mobile checks, export and documentation before asking the user to test camera permission and QR scanning on the physical Android phone. Wait for the observed result before final polish.
+Tests cover valid issuance, rotation, decline revocation, malformed/invalid/expired/reused tokens, other-volunteer access, role guards, and concurrent consumption. Live PostgreSQL workflow and Android export pass; migration status is up to date and existing records were retained. Physical camera permission, display, and scan behavior must be checked on the user's Android phone before Phase 5.
 
 ## Phase 5 — Final polish and CPAD preparation (authorized; after QR device check)
 
@@ -145,3 +145,15 @@ Prepare accurate README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMEN
 - [x] Update README, API_DOCUMENTATION, DATABASE_SCHEMA, TESTING, DEVELOPMENT_LOG, and this plan.
 
 **Phase 3 status: complete; role-scoped data comes from the live API. No database schema change was needed.**
+
+## Phase 4 progress log
+
+- [x] Add the SDK 58 compatible Expo Camera scanner and QR rendering package/configuration.
+- [x] Add the additive keyed-token schema and migration; apply it without resetting or deleting existing records.
+- [x] Require donor ownership and an accepted volunteer assignment to issue/rotate QR; bind token to the expected volunteer and assignment with a 10-minute expiry.
+- [x] Consume a token atomically with the existing collection transition; reject invalid, expired, revoked, replayed, wrong-volunteer, and concurrent use; revoke on assignment decline.
+- [x] Extend automated QR payload/token tests and live four-role workflow smoke; update API, database, README, testing, and development documentation.
+- [x] Pass TypeScript, API/mobile unit tests, API build, Prisma validation/migration status, Expo SDK package check, live database smoke, and Android production export.
+- [ ] Physical Android camera/permission/QR test (awaiting user confirmation in `TESTING.md`).
+
+**Phase 4 status: implementation and automated checks complete. Pause before Phase 5 for the physical-device QR result.**

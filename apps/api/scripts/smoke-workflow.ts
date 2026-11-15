@@ -58,6 +58,9 @@ async function main() {
   const volunteerRegistration = await call("/auth/register", { method: "POST", body: { name: `Smoke Volunteer ${suffix}`, email: `volunteer-${suffix}@example.invalid`, password: testPassword, role: "VOLUNTEER" } });
   ok(volunteerRegistration, "Volunteer registration");
   const volunteerToken = volunteerRegistration.data.accessToken as string;
+  const otherVolunteerRegistration = await call("/auth/register", { method: "POST", body: { name: `Smoke Other Volunteer ${suffix}`, email: `other-volunteer-${suffix}@example.invalid`, password: testPassword, role: "VOLUNTEER" } });
+  ok(otherVolunteerRegistration, "Second volunteer registration for QR ownership guard");
+  const otherVolunteerToken = otherVolunteerRegistration.data.accessToken as string;
   if ((await call("/auth/me", { token: volunteerToken })).data.user?.role !== "VOLUNTEER") throw new Error("Volunteer session role check failed");
   ok(await call("/volunteer/tasks", { token: volunteerToken }), "Volunteer dashboard tasks");
   ok(await call("/impact/summary", { token: volunteerToken }), "Volunteer impact authorization");
@@ -118,6 +121,7 @@ async function main() {
   ok(tasks, "Volunteer task dashboard");
   const assignmentId = tasks.data.tasks?.find((task: any) => task.requestId === requestId || task.request?.id === requestId)?.id as string;
   if (!assignmentId) throw new Error("Volunteer could not see the approved assignment");
+  expect(await call(`/assignments/${assignmentId}/collection-qr`, { method: "POST", token: donorToken }), 409, "QR cannot be issued before volunteer acceptance");
   ok(await call("/volunteer/availability", { method: "PATCH", token: volunteerToken, body: { available: false } }), "Volunteer marks unavailable");
   const unavailableAccept = await call(`/assignments/${assignmentId}/accept`, { method: "PATCH", token: volunteerToken });
   expect(unavailableAccept, 409, "Unavailable volunteer cannot accept assignment");
@@ -127,7 +131,28 @@ async function main() {
   expect(await call(`/assignments/${assignmentId}/accept`, { method: "PATCH", token: volunteerToken }), 409, "Duplicate assignment acceptance guard");
   const skipCollection = await call(`/assignments/${assignmentId}/deliver`, { method: "PATCH", token: volunteerToken });
   expect(skipCollection, 409, "Delivery transition guard");
-  ok(await call(`/assignments/${assignmentId}/collect`, { method: "PATCH", token: volunteerToken }), "Volunteer records collection");
+  expect(await call(`/assignments/${assignmentId}/collection-qr`, { method: "POST", token: ngoToken }), 403, "Only donor can issue assignment QR");
+  const firstQr = await call(`/assignments/${assignmentId}/collection-qr`, { method: "POST", token: donorToken });
+  ok(firstQr, "Donor issues collection QR");
+  const firstPayload = JSON.parse(firstQr.data.qrPayload);
+  if (firstPayload.assignmentId !== assignmentId || typeof firstPayload.token !== "string" || "tokenHash" in firstQr.data) throw new Error("Collection QR response is malformed");
+  expect(await call(`/assignments/${assignmentId}/collect`, { method: "PATCH", token: otherVolunteerToken, body: { token: firstPayload.token } }), 404, "Different volunteer cannot redeem assigned QR");
+  ok(await call(`/assignments/${assignmentId}/decline`, { method: "PATCH", token: volunteerToken }), "Volunteer declines assignment and revokes pending QR");
+  ok(await call(`/assignments/${assignmentId}/accept`, { method: "PATCH", token: volunteerToken }), "Volunteer reaccepts declined assignment");
+  expect(await call(`/assignments/${assignmentId}/collect`, { method: "PATCH", token: volunteerToken, body: { token: firstPayload.token } }), 409, "Declined assignment QR revoked");
+  const rotatedQr = await call(`/assignments/${assignmentId}/collection-qr`, { method: "POST", token: donorToken });
+  ok(rotatedQr, "Donor rotates collection QR");
+  const qrPayload = JSON.parse(rotatedQr.data.qrPayload);
+  expect(await call(`/assignments/${assignmentId}/collect`, { method: "PATCH", token: volunteerToken, body: { token: "x".repeat(43) } }), 409, "Invalid QR rejected");
+  const taskSnapshot = await call("/volunteer/tasks", { token: volunteerToken });
+  ok(taskSnapshot, "Volunteer tasks omit QR token data");
+  if (JSON.stringify(taskSnapshot.data).includes(qrPayload.token)) throw new Error("Collection QR plaintext leaked into volunteer task response");
+  const concurrentScans = await Promise.all([1, 2].map(() => call(`/assignments/${assignmentId}/collect`, { method: "PATCH", token: volunteerToken, body: { token: qrPayload.token } })));
+  const scanSuccesses = concurrentScans.filter(result => result.status === 200);
+  const scanConflicts = concurrentScans.filter(result => result.status === 409);
+  if (scanSuccesses.length !== 1 || scanConflicts.length !== 1) throw new Error("Concurrent collection scans were not consumed exactly once");
+  if (!["INVALID_TRANSITION", "CONCURRENT_UPDATE", "INVALID_COLLECTION_QR"].includes(scanConflicts[0].data?.error?.code)) throw new Error("Collection QR replay returned an unexpected conflict");
+  expect(await call(`/assignments/${assignmentId}/collect`, { method: "PATCH", token: volunteerToken, body: { token: qrPayload.token } }), 409, "Reused collection QR rejected");
   ok(await call(`/assignments/${assignmentId}/deliver`, { method: "PATCH", token: volunteerToken }), "Volunteer records delivery");
   ok(await call(`/requests/${requestId}/confirm-delivery`, { method: "PATCH", token: ngoToken }), "NGO confirms delivery");
 
@@ -177,7 +202,7 @@ async function main() {
   console.log("Public admin-role escalation guard: PASS");
   console.log("Role restrictions, NGO verification, and volunteer availability guards: PASS");
   console.log("Donation browse/request/approval and insufficient-quantity guard: PASS");
-  console.log("Assignment accept/collect/deliver, transition guard, and NGO confirmation: PASS");
+  console.log("Assignment accept, donor QR issue/rotation, invalid/replayed/concurrent scan guards, delivery, and NGO confirmation: PASS");
   console.log("Final request, delivery, and available-quantity consistency: PASS");
   console.log("Role-scoped impact summaries, confirmed quantities by unit, and meal-estimate rules: PASS");
   console.log("Concurrent reservation serialization and oversubscription guard: PASS");

@@ -1,11 +1,21 @@
 # Development Log
 
+## 2026-11-15 — Phase 4: One-time QR collection verification
+
+- Added an additive Prisma `CollectionToken` table with unique assignment/token-hash constraints, expected volunteer binding, expiry, one-time use, and revocation. Applied migration `20261115120000_collection_qr_tokens` to the existing PostgreSQL database; Prisma reports the database is up to date. No existing rows were reset or deleted.
+- Added donor-only QR issue/rotation for accepted assignments. The API returns plaintext only in the explicit donor QR response; PostgreSQL stores a keyed HMAC-SHA-256 hash and task/dashboard responses never include the token. Volunteer collection atomically verifies and consumes the QR with the existing Assignment/Delivery/Request transition. Declining an assignment revokes its current token.
+- Added SDK 58-compatible Expo Camera scanning and QR rendering. The Volunteer Tasks action opens an assignment-bound scanner; the donor Requests screen displays a ten-minute QR. Camera access requests only the camera permission.
+- Extended live workflow smoke and unit tests for role/ownership, pre-acceptance, QR rotation/revocation, other-volunteer access, invalid/replayed/concurrent use, expiry helper rules, and existing delivery/NGO confirmation behavior.
+- Passed: API tests 12/12; mobile tests 37/37; workspace TypeScript; shared/API build; Prisma validation and migration status; Expo SDK dependency check; live PostgreSQL workflow smoke; Android production export (1,555 modules; 3.7 MB Hermes bundle); `git diff --check`.
+- Pending: physical Android camera permission, QR display/readability, scan, and full journey verification. No Android device/emulator is connected here; `TESTING.md` leaves these checks unchecked.
+
 ## 2026-11-15 — Phase 3: Role-scoped impact and sustainability summary
 
 - Added authenticated `GET /impact/summary`, scoped to donor-owned listings, the signed-in NGO, assigned volunteer work, or platform totals for Admin. It queries only NGO-confirmed completed requests and confirmed deliveries. Each original unit remains a separate quantity group.
 - Home now shows role-appropriate donation/request/delivery counts, unit-grouped redistributed food, and a clearly labeled meal estimate. Meal units are limited to meal, meal packet, portion, and serving; each is estimated as one meal and unrecognized units are excluded from that estimate but retained in the breakdown. No environmental figure is shown because the database has neither standardized weight data nor a validated emissions factor. No schema migration or dependency was needed.
 - Added calculation, role-display, role-cache invalidation, and unit-preservation tests; extended the database workflow smoke to assert all four roles and an exact completed fixture.
 - Passed: API tests 10/10; mobile tests 36/36; workspace TypeScript; shared/API build; Android production export (1,234 modules; 2.9 MB Hermes); full live database workflow smoke including authorization, quantity allocation, delivery confirmation and impact scoping.
+- Commit: `5570118` (`Add role-scoped impact dashboard`).
 - Impact view still needs manual appearance review on the four physical-device role sessions; the existing Android phone is needed for the QR camera workflow in Phase 4.
 
 ## 2026-11-15 — Phase 2 follow-up: button contrast, donor dashboard refresh, logout race

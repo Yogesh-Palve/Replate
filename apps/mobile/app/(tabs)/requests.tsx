@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import { Lucide } from "@react-native-vector-icons/lucide";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import QRCode from "react-native-qrcode-svg";
 import { api } from "../../src/api/client";
 import { Button, Card, EmptyState, FilterChip, IconBadge, LoadingState, Screen, SectionHeading, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
@@ -30,6 +31,7 @@ export default function Requests() {
   const donor = user?.role === "DONOR";
   const ngo = user?.role === "NGO";
   const [filter, setFilter] = useState<RequestFilter>("ALL");
+  const [activeQr, setActiveQr] = useState<{ assignmentId: string; payload: string; expiresAt: string } | null>(null);
   const actionGuard = useRef(createSubmissionGuard()).current;
   const query = useQuery({ queryKey: ["requests"], enabled: Boolean(user && !signingOut), queryFn: async ({ signal }) => (await api.get("/requests", { signal })).data.requests });
   const action = useMutation({
@@ -46,6 +48,14 @@ export default function Requests() {
       notify("success", successMessages[variables.op]);
       await Promise.all([qc.invalidateQueries({ queryKey: ["requests"] }), qc.invalidateQueries({ queryKey: ["donations"] }), invalidateDashboard(qc, user?.role), invalidateImpact(qc, user?.role)]);
     },
+  });
+  const collectionQr = useMutation({
+    mutationFn: async (assignmentId: string) => (await api.post(`/assignments/${assignmentId}/collection-qr`)).data as { qrPayload: string; expiresAt: string },
+    onSuccess: (result, assignmentId) => {
+      setActiveQr({ assignmentId, payload: result.qrPayload, expiresAt: result.expiresAt });
+      notify("success", "Collection QR generated. It expires in 10 minutes.");
+    },
+    onError: error => notify("error", getApiErrorMessage(error, "Collection QR could not be generated. Try again."), { duration: null }),
   });
   useEffect(() => {
     if (query.isError && user && !signingOut) notify("error", getApiErrorMessage(query.error, "Could not load requests. Check your API connection."), { duration: null });
@@ -96,6 +106,13 @@ export default function Requests() {
               </View>}
               {ngo && ["PENDING", "APPROVED"].includes(request.status) && <Button title="Cancel request" secondary destructive icon="ban" onPress={() => runAction({ id: request.id, op: "cancel" })} disabled={action.isPending} loading={buttonBusy(request.id, "cancel")} />}
               {ngo && request.status === "DELIVERED" && <Button title="Confirm delivery" icon="package-check" onPress={() => runAction({ id: request.id, op: "confirm" })} disabled={action.isPending} loading={buttonBusy(request.id, "confirm")} />}
+              {donor && request.status === "VOLUNTEER_ASSIGNED" && request.assignment?.id && <Button title="Show collection QR" icon="qr-code" onPress={() => collectionQr.mutate(request.assignment.id)} disabled={collectionQr.isPending} loading={collectionQr.isPending && collectionQr.variables === request.assignment.id} />}
+              {activeQr && activeQr.assignmentId === request.assignment?.id ? <View style={{ alignItems: "center", gap: spacing.sm, marginTop: spacing.md, padding: spacing.md, backgroundColor: colors.surfaceSoft, borderRadius: radii.md }}>
+                <Text style={{ color: colors.ink, fontWeight: typography.weight.bold }}>Show this QR to the assigned volunteer</Text>
+                <QRCode value={activeQr.payload} size={220} backgroundColor={colors.white} color={colors.ink} />
+                <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption }}>Expires {new Date(activeQr.expiresAt).toLocaleTimeString()}</Text>
+                <Text style={{ color: colors.secondaryText, fontSize: typography.size.caption, textAlign: "center" }}>For your accepted assignment only. Generate a new QR if this one expires.</Text>
+              </View> : null}
               {request.assignment?.volunteer ? <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.md }}><Lucide name="truck" size={16} color={colors.secondaryText} accessibilityElementsHidden importantForAccessibility="no" /><Text style={{ color: colors.secondaryText, fontSize: typography.size.caption }}>Volunteer: {request.assignment.volunteer.name}</Text></View> : null}
             </Card>)}
           </>}
