@@ -1,5 +1,13 @@
 # Development Log
 
+## 2026-11-15 — Phase 1: RePlate branding and design system
+
+- Inspected the actual Expo Router auth/tab routes, shared controls, theme, icon package, app config, API/database boundaries, and package/test setup. The prior app had a small color-only theme, shared controls with inline style values, no original logo, and no launcher/splash assets.
+- Created an original plate, leaf, and circular-return mark with vector SVG source, reusable transparent PNG, iOS/general app icon, Android adaptive foreground, and branded splash art. Added a small Pillow-based asset regeneration script and configured SDK 58 splash/icon settings.
+- Expanded centralized tokens to include the requested brand palette, semantic states, spacing, typography, radii, and elevation while retaining compatibility aliases. Updated shared primitives, global toast colors, Android status bar, and auth screens to consume the shared foundation. Existing screen layouts and role/business flows were not redesigned.
+- Added tests for palette/aliases, design-token availability, and semantic workflow badge variants. Passed: mobile tests (22/22), API tests (8/8), workspace TypeScript checks, Expo dependency validation using the local SDK map (online versions endpoint unavailable), Expo Doctor (20/20), resolved Expo config asset/plugin paths, PNG asset regeneration, and Android production export (1,229 modules; 2.9 MB Hermes bundle). No physical-device or native splash visual claim is made; those require a native Android build/device.
+- Phase 1 code/config/export acceptance is complete. Phase 2 and all new product features remain gated on explicit user approval.
+
 ## 2026-11-15 — Donation cancellation state and eligibility
 
 - Fixed donor donation cards to show **Cancel listing** only for `AVAILABLE` and `PARTIALLY_RESERVED` donations. On successful cancellation, the API response updates matching React Query donation-list caches immediately, then donation, request, and admin queries are invalidated. The success toast now reads “Donation listing cancelled successfully.”

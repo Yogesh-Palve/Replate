@@ -23,7 +23,7 @@ The academic MVP implementation is in place. See [IMPLEMENTATION_PLAN.md](IMPLEM
 
 The example `CORS_ORIGIN="*"` is for local development. Set it to exact trusted web origins before deploying the API publicly. Authentication routes currently have no request rate limiting; add deployment-level protection before exposing a public production service.
 
-The mobile workspace uses Expo SDK 58, React Native 0.88, and React 19.3. It uses Expo-compatible native Android date and time dialogs for donation preparation and collection scheduling, a shared top-of-screen toast for action/API feedback, and Lucide icons for role-aware bottom navigation. After installing dependencies, validate SDK package versions with `npm exec -w @replate/mobile -- expo install --check`.
+The mobile workspace uses Expo SDK 58, React Native 0.88, and React 19.3. It uses Expo-compatible native Android date and time dialogs for donation preparation and collection scheduling, a shared top-of-screen toast for action/API feedback, Lucide icons for role-aware bottom navigation, and centralized RePlate design tokens. Original logo source and generated app/splash assets are under `apps/mobile/assets/branding`; regenerate their PNG files with `python apps/mobile/scripts/generate-brand-assets.py` (requires Pillow). The native splash and launcher icon settings are configured in `apps/mobile/app.json`; Expo Go does not display the final native splash, so validate those assets in an Android build. After installing dependencies, validate SDK package versions with `npm exec -w @replate/mobile -- expo install --check`.
 
 See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) and [TESTING.md](TESTING.md) for endpoints and verification steps. Public registration cannot set admin roles. Configure `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the API environment and run `npm run admin:bootstrap -w @replate/api` once to create the administrator.
 
@@ -35,7 +35,7 @@ See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) and [TESTING.md](TESTING.md) fo
 | `npm run dev:mobile` | Start Expo |
 | `npm run typecheck` | Type-check workspace packages |
 | `npm run test` | Run API unit tests |
-| `npm run test:mobile` | Run mobile form validation and duplicate-submission tests |
+| `npm run test:mobile` | Run mobile form, state, notification, navigation, and design-token tests |
 | `npm run smoke:workflow -w @replate/api` | Exercise auth and the full workflow against the configured live API/database; creates retained synthetic records |
 | `npm run build` | Build the shared package and API TypeScript output |
 | `npm run db:generate` | Generate Prisma client |

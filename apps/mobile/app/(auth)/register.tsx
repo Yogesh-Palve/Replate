@@ -6,6 +6,7 @@ import { useAuth } from "../../src/context/AuthContext";
 import { clearFormError, createSubmissionGuard, getApiErrorMessage, getApiValidationErrors, validateRegistration, type FormErrors, type RegistrationValues } from "../../src/forms/validation";
 import { theme } from "../../src/theme";
 import { useToast } from "../../src/notifications/ToastProvider";
+import { BrandLockup } from "../../src/components/BrandLockup";
 
 const roles = ["DONOR", "NGO", "VOLUNTEER"] as const;
 
@@ -50,6 +51,7 @@ export default function Register() {
   };
 
   return <Screen>
+    <BrandLockup markSize={48} />
     <Title sub="Join your local food-sharing community">Create account</Title>
     <Text style={{ color: theme.dark, fontWeight: "600", marginBottom: 8 }}>I am joining as</Text>
     {roles.map(item => <Pressable key={item} onPress={() => { setRole(item); setErrors({}); }} style={{ backgroundColor: role === item ? theme.pale : theme.white, borderColor: role === item ? theme.green : theme.border, borderWidth: 1, padding: 13, borderRadius: 12, marginBottom: 8 }}>

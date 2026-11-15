@@ -5,6 +5,8 @@ import { Button, Field, Screen, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { clearFormError, createSubmissionGuard, getApiErrorMessage, validateLogin, type FormErrors } from "../../src/forms/validation";
 import { useToast } from "../../src/notifications/ToastProvider";
+import { BrandLockup } from "../../src/components/BrandLockup";
+import { theme, typography } from "../../src/theme";
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -34,11 +36,12 @@ export default function Login() {
   };
 
   return <Screen>
+    <BrandLockup markSize={48} />
     <Title sub="Welcome back to RePlate">Log in</Title>
     <Field label="Email" value={email} onChangeText={value => { setEmail(value); setErrors(current => clearFormError(current, "email")); }} keyboardType="email-address" error={errors.email} />
     <Field label="Password" value={password} onChangeText={value => { setPassword(value); setErrors(current => clearFormError(current, "password")); }} secureTextEntry error={errors.password} />
-    <Link href="/(auth)/forgot-password"><Text style={{ color: "#16845B", marginVertical: 8 }}>Forgot password?</Text></Link>
+    <Link href="/(auth)/forgot-password"><Text style={{ color: theme.green, marginVertical: 8 }}>Forgot password?</Text></Link>
     <Button title="Log in" onPress={submit} disabled={busy} loading={busy} />
-    <Text style={{ textAlign: "center", marginTop: 18, color: "#718078" }}>New to RePlate? <Link href="/(auth)/register" style={{ color: "#16845B", fontWeight: "700" }}>Create account</Link></Text>
+    <Text style={{ textAlign: "center", marginTop: 18, color: theme.muted }}>New to RePlate? <Link href="/(auth)/register" style={{ color: theme.green, fontWeight: typography.weight.bold }}>Create account</Link></Text>
   </Screen>;
 }

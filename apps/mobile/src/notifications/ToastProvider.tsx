@@ -2,17 +2,17 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Lucide, type LucideIconName } from "@react-native-vector-icons/lucide";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { theme } from "../theme";
+import { semantic, theme, typography } from "../theme";
 import { createToastNotification, createToastTimer, isSameToast, type ToastNotification, type ToastOptions, type ToastType } from "./toastModel";
 
 type Notify = (type: ToastType, message: string, options?: ToastOptions) => void;
 const ToastContext = createContext<Notify | null>(null);
 
 const presentation = {
-  success: { icon: "circle-check", foreground: theme.green, background: "#EAF5EF", border: theme.green },
-  error: { icon: "circle-alert", foreground: theme.red, background: "#FEF3F2", border: theme.red },
-  warning: { icon: "triangle-alert", foreground: theme.amber, background: "#FFF7E5", border: theme.amber },
-  info: { icon: "info", foreground: "#1D4ED8", background: "#EFF6FF", border: "#1D4ED8" },
+  success: { icon: "circle-check", ...semantic.success },
+  error: { icon: "circle-alert", ...semantic.error },
+  warning: { icon: "triangle-alert", ...semantic.warning },
+  info: { icon: "info", ...semantic.info },
 } satisfies Record<ToastType, { icon: LucideIconName; foreground: string; background: string; border: string }>;
 
 export function useToast(): Notify {
@@ -119,6 +119,6 @@ export function ToastProvider({ children }: React.PropsWithChildren) {
 const styles = StyleSheet.create({
   position: { position: "absolute", alignSelf: "center", zIndex: 10000, elevation: 10000 },
   banner: { minHeight: 60, flexDirection: "row", alignItems: "center", borderRadius: 15, borderLeftWidth: 4, paddingLeft: 14, paddingRight: 8, paddingVertical: 10, shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 9 },
-  message: { flex: 1, flexShrink: 1, color: theme.dark, fontSize: 14, fontWeight: "600", lineHeight: 20, marginHorizontal: 10 },
+  message: { flex: 1, flexShrink: 1, color: theme.dark, fontSize: typography.size.small, fontWeight: typography.weight.semibold, lineHeight: typography.line.small, marginHorizontal: 10 },
   closeButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18 },
 });

@@ -6,6 +6,8 @@ Run `npm ci`, `npm run typecheck`, `npm run build`, and `npm test`. API unit tes
 
 Run `npm run test:mobile` for client-side login, registration, donation scheduling, request quantity, API error formatting, and duplicate-submission guard tests. Run `npm exec -w @replate/mobile -- expo install --check` and `npm exec -w @replate/mobile -- expo-doctor` to validate Expo SDK dependencies.
 
+Phase 1 branding checks: mobile tests assert the supplied brand colors, shared spacing/type/radius/elevation tokens, semantic workflow badges, and status-to-badge mapping. Check app config and asset references with `npx expo config --type public` and export Android with `npm exec -w @replate/mobile -- expo export --platform android --output-dir dist`. Expo Go does not display the final native splash/app icon; verify those in an Android build.
+
 Registration checks should cover all public roles (Donor, NGO, Volunteer), NGO organization/address requirements, invalid email/password field messages, API duplicate-email responses, and retry after network or secure-storage errors. Direct API role registration has been verified against the local database; it creates `.invalid` diagnostic users. The physical Expo Go build needs a fresh Metro bundle after local code or `EXPO_PUBLIC_API_URL` changes.
 
 With the API and configured PostgreSQL running, `npm run smoke:workflow -w @replate/api` exercises admin login/dashboard; Donor, NGO, and Volunteer registration, login, and role dashboards; public admin-role rejection; cross-role access restrictions; unverified NGO request rejection and admin verification; donation search; request approval/rejection; insufficient-quantity handling; volunteer availability enforcement and collection/delivery; NGO confirmation; and final state consistency. It also checks that a pending request does not reserve quantity, approval reserves exactly once, rejection does not consume quantity, an NGO cannot approve its own request, a volunteer cannot accept one assignment twice, and two simultaneous approvals cannot over-allocate stock. It creates unique synthetic `.invalid` accounts and food records and deliberately retains them; it never resets or deletes data. The final review run passed.
@@ -36,6 +38,12 @@ For the current Android form and picker changes, also check that empty/invalid l
 Use the existing local test accounts for Donor, NGO, Volunteer, and Admin. Keep passwords local; do not add credentials to this checklist. Check an item only after observing it on the phone. Do not unverify or alter real accounts. Use a clearly labeled test donation and small quantities.
 
 Device/date: __________  Android model/version: __________  Tester: __________
+
+### Brand foundation
+
+- [ ] In Welcome, Login, and Create Account, confirm the RePlate plate/leaf/reuse logo and “Good Food. Shared Better.” lockup render crisply and do not crowd the form on a small Android screen.
+- [ ] On a native Android build, confirm the launcher icon is centered and recognizable at small size and the splash image/tagline are centered on the ivory background. Expo Go is not a valid splash-screen check.
+- [ ] Confirm primary buttons, inputs, cards, status badges, and toasts use the same forest/sage/gold visual system; verify text contrast and button/status readability.
 
 ### Notifications and navigation icons
 

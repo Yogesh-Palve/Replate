@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { theme } from "../theme";
+import { getStatusVariant, radii, semantic, spacing, theme, typography } from "../theme";
 
 export function Screen({ children }: React.PropsWithChildren) {
   return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">{children}</ScrollView>;
@@ -74,8 +74,8 @@ export function DateTimeField({ label, value, mode, onChange, error }: DateTimeF
       accessibilityLabel={`${label}: ${displayValue}`}
       style={[s.input, s.dateButton, error && s.inputError]}
     >
-      <Text style={{ color: value ? theme.text : theme.muted, fontSize: 16 }}>{displayValue}</Text>
-      <Text style={{ color: theme.green, fontWeight: "700" }}>{mode === "date" ? "Calendar" : "Clock"}</Text>
+      <Text style={{ color: value ? theme.text : theme.muted, fontSize: typography.size.body }}>{displayValue}</Text>
+      <Text style={{ color: theme.green, fontWeight: typography.weight.semibold }}>{mode === "date" ? "Calendar" : "Clock"}</Text>
     </Pressable>
     {error ? <Text style={s.errorText} accessibilityRole="alert">{error}</Text> : null}
     {open ? <DateTimePicker
@@ -100,25 +100,30 @@ export function Button({ title, onPress, secondary, disabled, loading }: { title
 }
 
 export function Card({ children }: React.PropsWithChildren) { return <View style={s.card}>{children}</View>; }
-export function Message({ text, error }: { text: string; error?: boolean }) { return text ? <Text accessibilityRole={error ? "alert" : "text"} style={{ color: error ? theme.red : theme.green, marginVertical: 10 }}>{text}</Text> : null; }
-export function Status({ children }: React.PropsWithChildren) { return <Text style={s.status}>{children}</Text>; }
+export function Message({ text, error }: { text: string; error?: boolean }) { return text ? <Text accessibilityRole={error ? "alert" : "text"} style={{ color: error ? theme.red : theme.green, marginVertical: spacing.sm }}>{text}</Text> : null; }
+export function Status({ children, variant }: React.PropsWithChildren<{ variant?: "success" | "error" | "warning" | "info" | "neutral" }>) {
+  const label = typeof children === "string" || typeof children === "number" ? String(children) : "";
+  const tone = variant ?? getStatusVariant(label);
+  const color = tone === "neutral" ? { foreground: theme.muted, background: theme.colors.surfaceSoft, border: theme.border } : semantic[tone];
+  return <Text accessibilityRole="text" style={[s.status, { color: color.foreground, backgroundColor: color.background, borderColor: color.border }]}>{children}</Text>;
+}
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.bg },
-  content: { padding: 20, paddingBottom: 40 },
-  title: { color: theme.dark, fontWeight: "800", fontSize: 27 },
-  sub: { color: theme.muted, marginTop: 5, lineHeight: 21 },
-  field: { marginBottom: 13 },
-  label: { color: theme.dark, fontWeight: "600", marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.white, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, color: theme.text },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  title: { color: theme.dark, fontWeight: typography.weight.heavy, fontSize: typography.size.title, lineHeight: typography.line.title, letterSpacing: -0.5 },
+  sub: { color: theme.muted, marginTop: spacing.xs, lineHeight: typography.line.body },
+  field: { marginBottom: spacing.md },
+  label: { color: theme.dark, fontWeight: typography.weight.semibold, marginBottom: spacing.xs },
+  input: { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.white, borderRadius: radii.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: typography.size.body, color: theme.text },
   multiline: { height: 92, textAlignVertical: "top" },
   inputError: { borderColor: theme.red },
-  errorText: { color: theme.red, fontSize: 13, marginTop: 5 },
+  errorText: { color: theme.red, fontSize: typography.size.caption, marginTop: spacing.xxs },
   dateButton: { minHeight: 50, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  button: { backgroundColor: theme.green, padding: 15, borderRadius: 13, alignItems: "center", marginTop: 8, minHeight: 50, justifyContent: "center" },
-  secondary: { backgroundColor: theme.pale },
+  button: { backgroundColor: theme.green, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radii.md, alignItems: "center", marginTop: spacing.xs, minHeight: 50, justifyContent: "center" },
+  secondary: { backgroundColor: theme.pale, borderWidth: 1, borderColor: theme.border },
   disabled: { opacity: .55 },
-  buttonText: { color: theme.white, fontWeight: "700", fontSize: 16 },
-  card: { backgroundColor: theme.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: theme.border, marginBottom: 12 },
-  status: { color: theme.green, backgroundColor: theme.pale, overflow: "hidden", alignSelf: "flex-start", borderRadius: 20, paddingVertical: 4, paddingHorizontal: 9, fontSize: 12, fontWeight: "700", marginVertical: 5 },
+  buttonText: { color: theme.white, fontWeight: typography.weight.bold, fontSize: typography.size.body },
+  card: { backgroundColor: theme.white, borderRadius: radii.lg, padding: spacing.md, borderWidth: 1, borderColor: theme.border, marginBottom: spacing.md, ...theme.shadows.card },
+  status: { overflow: "hidden", alignSelf: "flex-start", borderWidth: 1, borderRadius: radii.pill, paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm, fontSize: typography.size.caption, fontWeight: typography.weight.semibold, marginVertical: spacing.xs },
 });
