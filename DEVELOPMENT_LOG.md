@@ -7,6 +7,7 @@
 - Added SDK 58-compatible Expo Camera scanning and QR rendering. The Volunteer Tasks action opens an assignment-bound scanner; the donor Requests screen displays a ten-minute QR. Camera access requests only the camera permission.
 - Extended live workflow smoke and unit tests for role/ownership, pre-acceptance, QR rotation/revocation, other-volunteer access, invalid/replayed/concurrent use, expiry helper rules, and existing delivery/NGO confirmation behavior.
 - Passed: API tests 12/12; mobile tests 37/37; workspace TypeScript; shared/API build; Prisma validation and migration status; Expo SDK dependency check; live PostgreSQL workflow smoke; Android production export (1,555 modules; 3.7 MB Hermes bundle); `git diff --check`.
+- Commit: `5b581dd` (`Add one-time QR collection verification`).
 - Pending: physical Android camera permission, QR display/readability, scan, and full journey verification. No Android device/emulator is connected here; `TESTING.md` leaves these checks unchecked.
 
 ## 2026-11-15 — Phase 3: Role-scoped impact and sustainability summary
