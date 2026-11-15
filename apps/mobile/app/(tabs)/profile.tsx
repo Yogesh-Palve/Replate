@@ -1,25 +1,26 @@
 import React, { useRef, useState } from "react";
 import { Text } from "react-native";
 import { router } from "expo-router";
-import { Button, Card, Message, Screen, Title } from "../../src/components/ui";
+import { Button, Card, Screen, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { createSubmissionGuard } from "../../src/forms/validation";
+import { useToast } from "../../src/notifications/ToastProvider";
 import { theme } from "../../src/theme";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
+  const notify = useToast();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   const signOutGuard = useRef(createSubmissionGuard()).current;
   const logOut = () => {
-    setError("");
     void signOutGuard(async () => {
       setBusy(true);
       try {
         await signOut();
+        notify("success", "You are signed out.");
         router.replace("/(auth)/welcome");
       } catch {
-        setError("You could not be signed out securely. Please try again.");
+        notify("error", "You could not be signed out securely. Please try again.", { duration: null });
       } finally {
         setBusy(false);
       }
@@ -34,7 +35,6 @@ export default function Profile() {
       <Text style={{ color: theme.green, fontWeight: "700", marginTop: 12 }}>{user?.role}</Text>
       {user?.organization && <Text style={{ color: theme.muted, marginTop: 8 }}>{user.organization.name} · {user.organization.verified ? "Verified" : "Awaiting verification"}</Text>}
     </Card>
-    <Message text={error} error />
     <Button title="Log out" secondary onPress={logOut} disabled={busy} loading={busy} />
   </Screen>;
 }

@@ -1,10 +1,11 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Text, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../src/api/client";
 import { Button, Card, DateTimeField, Field, Message, Screen, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { clearFormError, createSubmissionGuard, getApiErrorMessage, validateDonation, validateRequestQuantity, type DonationValues, type FormErrors } from "../../src/forms/validation";
+import { useToast } from "../../src/notifications/ToastProvider";
 import { theme } from "../../src/theme";
 
 type Donation = {
@@ -67,10 +68,10 @@ export default function Donations() {
   const { user } = useAuth();
   const donor = user?.role === "DONOR";
   const requester = user?.role === "NGO";
+  const notify = useToast();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [message, setMessage] = useState("");
   const query = useQuery({
     queryKey: ["donations", search, categoryFilter],
     queryFn: async () => (await api.get("/donations", { params: { search, category: categoryFilter || undefined } })).data.donations as Donation[],
@@ -80,19 +81,19 @@ export default function Donations() {
   const cancelMutation = useMutation({ mutationFn: (id: string) => api.patch(`/donations/${id}/cancel`) });
   const requestGuard = useRef(createSubmissionGuard()).current;
   const cancelGuard = useRef(createSubmissionGuard()).current;
-  const [requestError, setRequestError] = useState("");
-  const [cancelError, setCancelError] = useState("");
+  useEffect(() => {
+    if (query.isError) notify("error", getApiErrorMessage(query.error, "Could not load donations. Check the API connection."), { duration: null });
+  }, [notify, query.error, query.isError]);
 
   const runRequest = (id: string, quantity: number) => {
-    setRequestError("");
     void requestGuard(async () => {
       try {
         await requestMutation.mutateAsync({ id, quantity });
-        setMessage("Request sent to the donor.");
+        notify("success", "Request sent to the donor.");
         void qc.invalidateQueries({ queryKey: ["donations"] });
         void qc.invalidateQueries({ queryKey: ["requests"] });
       } catch (error) {
-        setRequestError(getApiErrorMessage(error, "Your request could not be sent. Check your connection and try again."));
+        notify("error", getApiErrorMessage(error, "Your request could not be sent. Check your connection and try again."), { duration: null });
       }
     });
   };
@@ -100,13 +101,13 @@ export default function Donations() {
   const runCancel = (id: string) => Alert.alert("Cancel donation?", "This listing will no longer be available.", [
     { text: "Keep listing", style: "cancel" },
     { text: "Cancel listing", style: "destructive", onPress: () => {
-      setCancelError("");
       void cancelGuard(async () => {
         try {
           await cancelMutation.mutateAsync(id);
+          notify("success", "Donation listing cancelled.");
           void qc.invalidateQueries({ queryKey: ["donations"] });
         } catch (error) {
-          setCancelError(getApiErrorMessage(error, "The listing could not be cancelled. Try again."));
+          notify("error", getApiErrorMessage(error, "The listing could not be cancelled. Try again."), { duration: null });
         }
       });
     } },
@@ -119,7 +120,6 @@ export default function Donations() {
   const [deadlineDate, setDeadlineDate] = useState<Date | null>(null);
   const [deadlineTime, setDeadlineTime] = useState<Date | null>(null);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [createError, setCreateError] = useState("");
   const createGuard = useRef(createSubmissionGuard()).current;
   const setField = (key: "foodName" | "category" | "quantity" | "unit" | "pickupAddress" | "description", value: string) => {
     setFields(current => ({ ...current, [key]: value }));
@@ -139,10 +139,10 @@ export default function Donations() {
     }),
     onSuccess: () => {
       setForm(false);
-      setMessage("Donation published successfully.");
+      notify("success", "Donation published successfully.");
       setFields(emptyForm);
       setPreparedDate(null); setPreparedTime(null); setDeadlineDate(null); setDeadlineTime(null);
-      setFormErrors({}); setCreateError("");
+      setFormErrors({});
       void qc.invalidateQueries({ queryKey: ["donations"] });
     },
   });
@@ -151,7 +151,6 @@ export default function Donations() {
     const values = { ...fields, preparedAt: combineDateAndTime(preparedDate, preparedTime), collectionDeadline: combineDateAndTime(deadlineDate, deadlineTime) };
     const validationErrors = validateDonation(values);
     setFormErrors(validationErrors);
-    setCreateError("");
     if (Object.keys(validationErrors).length) return;
     setFields(values);
     void createGuard(async () => {
@@ -159,14 +158,14 @@ export default function Donations() {
         // Use validated values directly so the request cannot race state updates.
         await createMutation.mutateAsync(values);
       } catch (error) {
-        setCreateError(getApiErrorMessage(error, "The donation could not be published. Check your connection and try again."));
+        notify("error", getApiErrorMessage(error, "The donation could not be published. Check your connection and try again."), { duration: null });
       }
     });
   };
 
   return <Screen>
     <Title sub={donor ? "Food you are sharing with your community" : "Find fresh surplus food near you"}>{donor ? "My donations" : "Available food"}</Title>
-    {donor && <Button title={form ? "Close form" : "+ Share a donation"} onPress={() => { setForm(value => !value); setFormErrors({}); setCreateError(""); }} />}
+    {donor && <Button title={form ? "Close form" : "+ Share a donation"} onPress={() => { setForm(value => !value); setFormErrors({}); }} />}
     {donor && form && <Card>
       <Field label="Food name" value={fields.foodName} onChangeText={value => setField("foodName", value)} error={formErrors.foodName} />
       <Field label="Category" value={fields.category} onChangeText={value => setField("category", value)} error={formErrors.category} />
@@ -179,18 +178,14 @@ export default function Donations() {
       {deadlineDate && deadlineTime && formErrors.collectionDeadline ? <Message text={formErrors.collectionDeadline} error /> : null}
       <Field label="Pickup address" value={fields.pickupAddress} onChangeText={value => setField("pickupAddress", value)} multiline error={formErrors.pickupAddress} />
       <Field label="Notes (optional)" value={fields.description} onChangeText={value => setField("description", value)} multiline error={formErrors.description} />
-      <Message text={createError} error />
       <Button title="Publish donation" onPress={submitDonation} disabled={createMutation.isPending} loading={createMutation.isPending} />
     </Card>}
     {!donor && <>
       <Field label="Search food" value={search} onChangeText={setSearch} />
       <Field label="Filter by category" value={categoryFilter} onChangeText={setCategoryFilter} placeholder="For example, prepared meals" />
     </>}
-    <Message text={message} />
-    <Message text={requestError} error />
-    <Message text={cancelError} error />
     {query.isLoading ? <ActivityIndicator color={theme.green} /> : query.isError
-      ? <Card><Text style={{ color: theme.red }}>{getApiErrorMessage(query.error, "Could not load donations. Check the API connection.")}</Text><Button title="Retry" onPress={() => query.refetch()} /></Card>
+      ? <Card><Button title="Retry" onPress={() => query.refetch()} /></Card>
       : (query.data || []).length === 0
         ? <Card><Text style={{ color: theme.muted }}>{donor ? "You have not shared a donation yet." : "No available donations found."}</Text></Card>
         : (query.data || []).map(item => <DonationCard

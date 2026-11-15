@@ -7,10 +7,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test src/forms/validation.test.ts"
+    "test": "tsx --test src/**/*.test.ts"
   },
   "dependencies": {
     "@react-native-community/datetimepicker": "9.2.1",
+    "@react-native-vector-icons/lucide": "^14.0.0",
     "@replate/shared": "1.0.0",
     "@tanstack/react-query": "^5.90.5",
     "axios": "^1.13.2",

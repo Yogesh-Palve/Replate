@@ -1,15 +1,17 @@
 import React, { useRef, useState } from "react";
 import { router } from "expo-router";
 import { Pressable, Text } from "react-native";
-import { Button, Field, Message, Screen, Status, Title } from "../../src/components/ui";
+import { Button, Field, Screen, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { clearFormError, createSubmissionGuard, getApiErrorMessage, getApiValidationErrors, validateRegistration, type FormErrors, type RegistrationValues } from "../../src/forms/validation";
 import { theme } from "../../src/theme";
+import { useToast } from "../../src/notifications/ToastProvider";
 
 const roles = ["DONOR", "NGO", "VOLUNTEER"] as const;
 
 export default function Register() {
   const { register } = useAuth();
+  const notify = useToast();
   const [role, setRole] = useState<RegistrationValues["role"]>("DONOR");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -17,7 +19,6 @@ export default function Register() {
   const [organizationName, setOrganizationName] = useState("");
   const [address, setAddress] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
-  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const submitGuard = useRef(createSubmissionGuard()).current;
 
@@ -25,7 +26,6 @@ export default function Register() {
     const values: RegistrationValues = { name, email, password, role, organizationName, address };
     const validationErrors = validateRegistration(values);
     setErrors(validationErrors);
-    setError("");
     if (Object.keys(validationErrors).length) return;
     void submitGuard(async () => {
       setBusy(true);
@@ -34,14 +34,14 @@ export default function Register() {
           name: name.trim(), email: email.trim(), password, role,
           ...(role === "NGO" ? { organizationName: organizationName.trim(), address: address.trim() } : {}),
         });
+        notify("success", "Your account is ready.");
         router.replace("/(tabs)");
       } catch (e) {
         const serverFieldErrors = getApiValidationErrors(e);
         if (Object.keys(serverFieldErrors).length) {
           setErrors(current => ({ ...current, ...serverFieldErrors }));
-          setError("");
         } else {
-          setError(getApiErrorMessage(e, "Registration could not be completed. Check your connection and try again."));
+          notify("error", getApiErrorMessage(e, "Registration could not be completed. Check your connection and try again."), { duration: null });
         }
       } finally {
         setBusy(false);
@@ -63,7 +63,6 @@ export default function Register() {
       <Field label="Organization address" value={address} onChangeText={value => { setAddress(value); setErrors(current => clearFormError(current, "address")); }} multiline error={errors.address} />
       <Status>Account verification is required before requesting food.</Status>
     </>}
-    <Message text={error} error />
     <Button title="Create account" onPress={submit} disabled={busy} loading={busy} />
   </Screen>;
 }

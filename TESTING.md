@@ -37,6 +37,14 @@ Use the existing local test accounts for Donor, NGO, Volunteer, and Admin. Keep 
 
 Device/date: __________  Android model/version: __________  Tester: __________
 
+### Notifications and navigation icons
+
+- [ ] Trigger success feedback from login and a successful action; confirm the toast slides in below the status bar, uses the success style, and dismisses after about 4.5 seconds.
+- [ ] Trigger an API/network failure (for example, temporarily make the API unreachable); confirm the error toast shows useful detail, remains until dismissed, and does not leave a spinner running. Restore the API and retry without restarting the app.
+- [ ] Tap the close button on a toast; confirm it dismisses. Trigger the same message twice and confirm the existing toast updates instead of stacking another banner.
+- [ ] Confirm warning and informational toast styles are legible when those states are triggered.
+- [ ] Inspect the bottom navigation icons on Donor, NGO, Volunteer, and Admin accounts. Confirm the icons render as Lucide glyphs (not empty boxes), match each tab, and only the expected role tabs are visible.
+
 ### Open app and role navigation
 
 - [ ] Connect the phone and development computer to the same Wi-Fi. The current mobile API URL is `http://192.168.1.147:4000/api/v1`; if the computer's LAN IP has changed, update `apps/mobile/.env` and reload Expo. Open the current RePlate project in Expo Go and reload the latest bundle.

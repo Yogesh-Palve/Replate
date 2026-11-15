@@ -110,6 +110,7 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
   };
   const response = failure.response;
   const apiError = response?.data?.error;
+  if (apiError?.code === "INSUFFICIENT_QUANTITY") return "Requested quantity exceeds the available quantity. Please enter a smaller amount.";
   if (Array.isArray(apiError?.details)) {
     const messages = apiError.details
       .map((item: any) => {

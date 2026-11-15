@@ -1,5 +1,12 @@
 # Development Log
 
+## 2026-11-15 — Shared mobile notifications and role tab icons
+
+- Added a global, safe-area-aware notification banner with slide animation, success/error/warning/info styles, close action, 4.5-second default dismissal, persistent API errors, replacement/deduplication, and timer/animation cleanup. Authentication and Donor, NGO, Volunteer, and Admin actions now use consistent feedback; field validation remains inline.
+- Replaced missing role tab glyphs and the welcome-screen food emoji with Lucide font icons from the Expo Go-compatible `@react-native-vector-icons/lucide` package. Donor, NGO, Volunteer, and Admin tab visibility and icon selection have unit coverage.
+- Added notification-model timer/deduplication tests and expanded mobile validation coverage. Verified: mobile tests 14/14, API tests 5/5, workspace TypeScript checks, Expo dependency check (local bundled map; online endpoint unavailable), Expo Doctor 20/20, and Android production export (1,226 modules; 2.9 MB Hermes bundle, including the 815 KB Lucide font asset).
+- Physical-device presentation, native font rendering, and notification accessibility still need confirmation in Expo Go; the manual checklist is in `TESTING.md`. No backend or database changes were made.
+
 ## 2026-11-14 — Final MVP stability review
 
 - Expanded the live workflow smoke test to cover Donor, NGO, and Volunteer login in addition to registration; role-specific endpoint restrictions; unverified NGO request rejection and admin verification; volunteer availability enforcement; pending-request quantity invariance; exact quantity reservation on approval; no quantity change on rejection; duplicate volunteer acceptance rejection; and competing approval requests.

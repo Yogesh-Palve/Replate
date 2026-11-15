@@ -60,6 +60,7 @@ test("API errors preserve server messages and validation details", () => {
   assert.equal(getApiErrorMessage({ response: { status: 401, data: { error: { code: "INVALID_CREDENTIALS", message: "Email or password is incorrect" } } } }, "Fallback"), "Email or password is incorrect (INVALID_CREDENTIALS) — HTTP 401");
   const validationFailure = { response: { status: 400, data: { error: { code: "VALIDATION_ERROR", message: "Request validation failed", details: [{ path: ["quantity"], message: "Quantity must be positive" }] } } } };
   assert.equal(getApiErrorMessage(validationFailure, "Fallback"), "quantity: Quantity must be positive");
+  assert.equal(getApiErrorMessage({ response: { status: 409, data: { error: { code: "INSUFFICIENT_QUANTITY", message: "The raw API detail is not user-friendly" } } } }, "Fallback"), "Requested quantity exceeds the available quantity. Please enter a smaller amount.");
   assert.deepEqual(getApiValidationErrors({ response: { data: { error: { details: [{ path: ["email"], message: "Invalid email address" }, { path: ["password"], message: "Too short" }] } } } }), { email: "Invalid email address", password: "Too short" });
   assert.equal(getApiErrorMessage(new Error("Secure storage unavailable"), "Check your connection."), "Secure storage unavailable");
   assert.match(getApiErrorMessage({ request: {}, code: "ERR_NETWORK", message: "Network Error", config: { baseURL: "http://192.168.1.147:4000/api/v1" } }, "Fallback"), /Could not reach the RePlate API at http:\/\/192\.168\.1\.147:4000\/api\/v1.*ERR_NETWORK/);

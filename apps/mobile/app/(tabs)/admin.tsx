@@ -1,16 +1,17 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../src/api/client";
-import { Button, Card, Message, Screen, Status, Title } from "../../src/components/ui";
+import { Button, Card, Screen, Status, Title } from "../../src/components/ui";
 import { createSubmissionGuard, getApiErrorMessage } from "../../src/forms/validation";
+import { useToast } from "../../src/notifications/ToastProvider";
 import { theme } from "../../src/theme";
 
 type DashboardData = { stats: Record<string, number>; organizations: any[]; requests: any[]; users: any[]; donations: any[] };
 
 export default function Admin() {
+  const notify = useToast();
   const qc = useQueryClient();
-  const [actionError, setActionError] = useState("");
   const actionGuard = useRef(createSubmissionGuard()).current;
   const query = useQuery({
     queryKey: ["admin"],
@@ -23,21 +24,22 @@ export default function Admin() {
   });
   const verify = useMutation({
     mutationFn: (id: string) => api.patch(`/admin/organizations/${id}/verify`, { verified: true }),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ["admin"] }); },
+    onSuccess: () => { notify("success", "Organization verified."); void qc.invalidateQueries({ queryKey: ["admin"] }); },
   });
+  useEffect(() => {
+    if (query.isError) notify("error", getApiErrorMessage(query.error, "Admin data could not be loaded. Confirm this account has admin access."), { duration: null });
+  }, [notify, query.error, query.isError]);
   const verifyOrganization = (id: string) => {
-    setActionError("");
     void actionGuard(async () => {
       try { await verify.mutateAsync(id); }
-      catch (error) { setActionError(getApiErrorMessage(error, "Organization verification could not be saved. Try again.")); }
+      catch (error) { notify("error", getApiErrorMessage(error, "Organization verification could not be saved. Try again."), { duration: null }); }
     });
   };
 
   return <Screen>
     <Title sub="Review organizations and monitor the platform">Admin dashboard</Title>
-    <Message text={actionError} error />
     {query.isLoading ? <ActivityIndicator color={theme.green} /> : query.isError
-      ? <Card><Text style={{ color: theme.red }}>{getApiErrorMessage(query.error, "Admin data could not be loaded. Confirm this account has admin access.")}</Text><Button title="Retry" onPress={() => query.refetch()} /></Card>
+      ? <Card><Button title="Retry" onPress={() => query.refetch()} /></Card>
       : <>
         <Card>
           <Text style={{ fontSize: 20, fontWeight: "800", color: theme.dark }}>Platform statistics</Text>
