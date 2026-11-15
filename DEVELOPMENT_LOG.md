@@ -8,6 +8,7 @@
 - Added `ARCHITECTURE.md` with system/trust-boundary and donation lifecycle diagrams, and `CPAD_DEMO.md` with setup, an eight-minute role sequence, and a screenshot list that avoids capturing live QR tokens or credentials.
 - User confirmed the core QR handover on a physical Android phone. This workstation has no Android device/emulator or `adb`, so actual screenshot images and the remaining expiry/permission-negative checks are still manual. The capture checklist is ready; no images were fabricated.
 - Phase 5 remains limited to polish, verification, and CPAD preparation; no new major feature or Smart Expiring-Soon system was added.
+- Phase 5 documentation/CPAD commit: `cccdb0c` (`Prepare RePlate for CPAD evaluation`).
 
 ## 2026-11-15 — Physical QR confirmation and NGO listing badge fix
 
