@@ -163,3 +163,18 @@ Use the existing test accounts and real API data. Leave every box unchecked unti
 - [ ] Run the labeled test donation lifecycle and reconcile final status/quantities across Donor Donations/Requests, NGO Requests, Volunteer Tasks, and Admin monitoring.
 
 Physical device results: **pending user verification**. Automated checks cannot confirm native Android picker dialogs, layout at the user's display/font scale, or physical tap/navigation behavior.
+
+## Android authentication input focus regression (manual, pending)
+
+- [ ] On the physical Android phone in Expo Go, open Login. Tap Email, type/edit/select text, then tap Password and type/edit/select text. Confirm focus stays only in the tapped field and does not jump or flicker.
+- [ ] Dismiss the keyboard, reopen each field, use the keyboard Next/Done actions, and scroll the form with the keyboard open. Confirm keyboard visibility does not cause focus changes or screen glitches.
+- [ ] Repeat on Create Account for Donor, NGO, and Volunteer. For NGO, test Organization name and multiline Address as well as Name, Email, and Password.
+- [ ] Confirm invalid/missing values still show field-specific validation; a valid sign-in/registration continues through the existing API flow.
+- [ ] Open another shared-Field screen (such as donor Create Donation or NGO Donation Details) and confirm its fields also retain focus while typing.
+
+Code-level status: shared focus-triggered state updates have been removed and Android password autofill hints corrected; native physical-device verification is still required before declaring the focus bug resolved.
+
+## Auth focus stabilization checks — 2026-11-15
+
+- Passed: mobile tests 29/29, workspace TypeScript, Android production export (1,232 modules; 2.9 MB Hermes), and `git diff --check`.
+- Device reproduction was not possible: this workstation has no `adb` command or Android emulator. Keep the checklist above unchecked until tested on the physical phone.

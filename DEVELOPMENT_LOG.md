@@ -1,5 +1,13 @@
 # Development Log
 
+## 2026-11-15 — Android auth input focus investigation
+
+- Traced Login, Registration, `Field`, shared `Screen`, auth Stack, and auth context. No `autoFocus`, focus refs, imperative `.focus()`/`.blur()`, focus effects, or navigation lifecycle loop exists.
+- Found two focus-sensitive Phase 2 changes in the shared field path: focus/blur caused React state updates solely to change the field border/icon (an avoidable render during native focus), and auth used `autoComplete="password"`, which is not the documented React Native Android password hint. Corrected Login to `current-password`, Registration to `new-password`, removed focus-driven component state, retained the branded caret color, and disabled capitalization/correction for secure password entry.
+- Added regression checks that assert the shared Field does not programmatically/statefully manage native focus and that auth uses supported password autofill values. Other screens share this Field and receive the same focus-state stabilization.
+- Passed: mobile tests 29/29, workspace TypeScript, Android production export (1,232 modules; 2.9 MB Hermes), and `git diff --check`. No backend/API/schema changes.
+- The user-reported cycling could not be reproduced on this workstation because `adb` and an Android emulator are unavailable. These source-level fixes are not considered physically verified; the Login/Registration and shared-field phone checklist in `TESTING.md` remains pending. Confirm native focus behavior on the physical Android device before marking this resolved.
+
 ## 2026-11-15 — Phase 2: Complete role-based mobile UI redesign
 
 - Completed the approved sequence: Welcome/Login/Registration; Donor home, donation create/list/history, requests and profile; NGO home, discovery/details/request/received tracking and profile; Volunteer home, assignment filters/actions and profile; Admin overview, verification, user filters, and donation/request monitoring.

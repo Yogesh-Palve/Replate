@@ -50,7 +50,7 @@ export default function Login() {
         </View>
       </View>
       <Field label="Email address" value={email} onChangeText={value => { setEmail(value); setErrors(current => clearFormError(current, "email")); }} keyboardType="email-address" autoComplete="email" icon="mail" placeholder="you@example.com" error={errors.email} />
-      <Field label="Password" value={password} onChangeText={value => { setPassword(value); setErrors(current => clearFormError(current, "password")); }} secureTextEntry autoComplete="password" icon="lock-keyhole" placeholder="Enter your password" error={errors.password} />
+      <Field label="Password" value={password} onChangeText={value => { setPassword(value); setErrors(current => clearFormError(current, "password")); }} secureTextEntry autoComplete="current-password" icon="lock-keyhole" placeholder="Enter your password" error={errors.password} />
       <View style={{ alignItems: "flex-end", marginBottom: spacing.sm }}>
         <Link href="/(auth)/forgot-password" accessibilityRole="link"><Text style={{ color: colors.primary, fontWeight: typography.weight.semibold, fontSize: typography.size.small }}>Forgot password?</Text></Link>
       </View>

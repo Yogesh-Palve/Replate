@@ -22,15 +22,14 @@ type FieldProps = {
   secureTextEntry?: boolean;
   error?: string;
   icon?: LucideIconName;
-  autoComplete?: "email" | "name" | "password" | "off";
+  autoComplete?: "email" | "name" | "current-password" | "new-password" | "off";
 };
 
 export function Field({ label, value, onChangeText, placeholder, keyboardType, multiline, secureTextEntry, error, icon, autoComplete }: FieldProps) {
-  const [focused, setFocused] = useState(false);
   return <View style={s.field}>
     <Text style={s.label}>{label}</Text>
-    <View style={[s.inputFrame, focused && s.inputFocused, error && s.inputError, multiline && s.multilineFrame]}>
-      {icon ? <Lucide name={icon} size={19} color={focused ? theme.green : theme.muted} accessibilityElementsHidden importantForAccessibility="no" /> : null}
+    <View style={[s.inputFrame, error && s.inputError, multiline && s.multilineFrame]}>
+      {icon ? <Lucide name={icon} size={19} color={theme.muted} accessibilityElementsHidden importantForAccessibility="no" /> : null}
       <TextInput
         style={[s.input, multiline && s.multiline]}
         value={value}
@@ -40,10 +39,10 @@ export function Field({ label, value, onChangeText, placeholder, keyboardType, m
         keyboardType={keyboardType}
         multiline={multiline}
         secureTextEntry={secureTextEntry}
-        autoCapitalize={keyboardType === "email-address" ? "none" : "sentences"}
+        autoCapitalize={keyboardType === "email-address" || secureTextEntry ? "none" : "sentences"}
+        autoCorrect={!secureTextEntry}
         autoComplete={autoComplete}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        selectionColor={theme.green}
         accessibilityLabel={label}
         accessibilityHint={error}
       />
@@ -159,7 +158,6 @@ const s = StyleSheet.create({
   label: { color: theme.dark, fontWeight: typography.weight.semibold, marginBottom: spacing.xs, fontSize: typography.size.small },
   inputFrame: { minHeight: 54, flexDirection: "row", alignItems: "center", gap: spacing.sm, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.white, borderRadius: radii.md, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   input: { flex: 1, minWidth: 0, padding: 0, minHeight: 38, fontSize: typography.size.body, color: theme.text },
-  inputFocused: { borderColor: theme.green, shadowColor: theme.green, shadowOpacity: 0.08, shadowRadius: 6, elevation: 1 },
   multilineFrame: { alignItems: "flex-start", paddingVertical: spacing.sm },
   multiline: { minHeight: 70, textAlignVertical: "top" },
   inputError: { borderColor: theme.red },
