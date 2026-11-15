@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  DONOR
+  NGO
+  VOLUNTEER
+  ADMIN
+}
+enum DonationStatus {
+  AVAILABLE
+  PARTIALLY_RESERVED
+  FULLY_RESERVED
+  EXPIRED
+  CANCELLED
+}
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  VOLUNTEER_ASSIGNED
+  COLLECTED
+  DELIVERED
+  COMPLETED
+}
+enum AssignmentStatus {
+  OPEN
+  ACCEPTED
+  COLLECTED
+  DELIVERED
+  CANCELLED
+}
+enum DeliveryStatus {
+  PENDING
+  COLLECTED
+  DELIVERED
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  email String @unique
+  passwordHash String
+  role Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  organization Organization?
+  volunteerProfile VolunteerProfile?
+  donations Donation[] @relation("Donor")
+  assignments Assignment[] @relation("Volunteer")
+  verifications Organization[] @relation("Verifier")
+  @@index([role])
+}
+
+model Organization {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
+  name String
+  address String
+  phone String?
+  verified Boolean @default(false)
+  verifiedAt DateTime?
+  verifiedById String? @db.Uuid
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifiedBy User? @relation("Verifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  requests Request[]
+  @@index([verified])
+}
+
+model VolunteerProfile {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
+  available Boolean @default(true)
+  phone String?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Donation {
+  id String @id @default(uuid()) @db.Uuid
+  donorId String @db.Uuid
+  foodName String
+  category String
+  quantity Int
+  availableQuantity Int
+  unit String
+  preparedAt DateTime
+  collectionDeadline DateTime
+  pickupAddress String
+  description String?
+  status DonationStatus @default(AVAILABLE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  donor User @relation("Donor", fields: [donorId], references: [id], onDelete: Restrict)
+  requests Request[]
+  @@index([status, collectionDeadline])
+  @@index([donorId, createdAt])
+  @@index([category])
+}
+
+model Request {
+  id String @id @default(uuid()) @db.Uuid
+  donationId String @db.Uuid
+  organizationId String @db.Uuid
+  quantity Int
+  note String?
+  status RequestStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  donation Donation @relation(fields: [donationId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assignment Assignment?
+  @@index([donationId, status])
+  @@index([organizationId, createdAt])
+  @@index([status, createdAt])
+}
+
+model Assignment {
+  id String @id @default(uuid()) @db.Uuid
+  requestId String @unique @db.Uuid
+  volunteerId String? @db.Uuid
+  status AssignmentStatus @default(OPEN)
+  acceptedAt DateTime?
+  collectedAt DateTime?
+  deliveredAt DateTime?
+  createdAt DateTime @default(now())
+  request Request @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  volunteer User? @relation("Volunteer", fields: [volunteerId], references: [id], onDelete: Restrict)
+  delivery Delivery?
+  @@index([volunteerId, status])
+  @@index([status, createdAt])
+}
+
+model Delivery {
+  id String @id @default(uuid()) @db.Uuid
+  assignmentId String @unique @db.Uuid
+  status DeliveryStatus @default(PENDING)
+  collectedAt DateTime?
+  deliveredAt DateTime?
+  confirmedAt DateTime?
+  createdAt DateTime @default(now())
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+}

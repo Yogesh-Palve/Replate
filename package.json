@@ -1,0 +1,17 @@
+{
+  "name": "replate",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["apps/api", "apps/mobile", "packages/shared"],
+  "scripts": {
+    "dev:api": "npm run dev -w @replate/api",
+    "dev:mobile": "npm run start -w @replate/mobile",
+    "build": "npm run build -w @replate/shared && npm run build -w @replate/api",
+    "typecheck": "npm run typecheck -w @replate/shared && npm run typecheck -w @replate/api && npm run typecheck -w @replate/mobile",
+    "test": "npm run test -w @replate/api",
+    "test:mobile": "npm run test -w @replate/mobile",
+    "db:generate": "npm run db:generate -w @replate/api",
+    "db:migrate": "npm run db:migrate -w @replate/api",
+    "db:deploy": "npm run db:deploy -w @replate/api"
+  }
+}

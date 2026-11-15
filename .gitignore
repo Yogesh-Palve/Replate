@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.expo/
+.env
+.env.*
+!.env.example
+apps/api/.env
+apps/mobile/.env
+*.log
+.DS_Store
+Thumbs.db

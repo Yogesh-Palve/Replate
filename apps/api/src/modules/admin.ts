@@ -1,0 +1,13 @@
+import { Router } from "express";
+import { z } from "zod";
+import { prisma } from "../config/db.js";
+import { authenticate, requireRole } from "../middleware/auth.js";
+import { asyncRoute, HttpError, uuidParam } from "../utils/errors.js";
+const router = Router(); router.use(authenticate, requireRole("ADMIN"));
+router.get("/stats", asyncRoute(async (_req, res) => { const [users, donations, requests, pendingNgos, delivered] = await Promise.all([prisma.user.count(), prisma.donation.count(), prisma.request.count(), prisma.organization.count({ where: { verified: false } }), prisma.request.count({ where: { status: "COMPLETED" } })]); res.json({ stats: { users, donations, requests, pendingNgos, completedDeliveries: delivered } }); }));
+router.get("/users", asyncRoute(async (_req, res) => res.json({ users: await prisma.user.findMany({ select: { id: true, name: true, email: true, role: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 250 }) })));
+router.get("/organizations", asyncRoute(async (_req, res) => res.json({ organizations: await prisma.organization.findMany({ include: { user: { select: { name: true, email: true } } }, orderBy: { createdAt: "desc" }, take: 250 }) })));
+router.get("/donations", asyncRoute(async (_req, res) => res.json({ donations: await prisma.donation.findMany({ include: { donor: { select: { name: true, email: true } } }, orderBy: { createdAt: "desc" }, take: 250 }) })));
+router.get("/requests", asyncRoute(async (_req, res) => res.json({ requests: await prisma.request.findMany({ include: { donation: true, organization: true, assignment: { include: { volunteer: { select: { name: true } }, delivery: true } } }, orderBy: { createdAt: "desc" }, take: 250 }) })));
+router.patch("/organizations/:id/verify", asyncRoute(async (req, res) => { const { verified } = z.object({ verified: z.boolean() }).parse(req.body); const id = uuidParam(req); const exists = await prisma.organization.findUnique({ where: { id } }); if (!exists) throw new HttpError(404, "NOT_FOUND", "Organization not found"); const organization = await prisma.organization.update({ where: { id: exists.id }, data: { verified, verifiedAt: verified ? new Date() : null, verifiedById: verified ? req.auth!.userId : null } }); res.json({ organization }); }));
+export default router;
