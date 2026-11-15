@@ -1,5 +1,14 @@
 # Development Log
 
+## 2026-11-15 — Phase 2 follow-up: button contrast, donor dashboard refresh, logout race
+
+- Root cause 1: shared `Button` applied green foreground whenever `secondary` was set, even when `destructive` had changed the surface to red. Added a centralized danger-action palette (`#B42318` with white foreground) and made destructive styling take precedence for label, icon, and spinner. This fixes Cancel Listing, Logout, Decline Request, and Cancel Request consistently.
+- Root cause 2: Home caches by `['home', role]`, while listing mutations only invalidated donation/request/admin caches. The Donor metric data itself comes from the authenticated donor-scoped `/donations` and `/requests` endpoints, but its separate dashboard cache stayed fresh/stale independently. Create/cancel/request mutations now invalidate the relevant role dashboard. Home also refreshes only when its query is invalidated or older than the shared 15-second stale window on navigation focus. No full reload or repeated timer polling.
+- Root cause 3: logout deleted SecureStore token before changing auth state; mounted tabs could query during the transition (and Home's null-role fallback could select the Donor key). Logout now marks the transition, cancels all in-flight queries, aborts signal-aware protected requests, removes the token, then clears user state and private query cache. Protected queries are disabled while signed out/signing out. Error notifications remain enabled for genuine API/auth errors while a user is signed in.
+- Added tests for danger palette contrast, role-targeted dashboard invalidation/focus freshness, and logout sequencing/failure behavior for all four roles. Existing donor summary tests verify role-specific counts.
+- Passed: mobile tests 34/34, API tests 8/8, workspace TypeScript, shared/API build, Android production export (1,233 modules; 2.9 MB Hermes), and `git diff --check`. No backend/API contracts or database schema changed.
+- Physical Android checks for visual contrast, dashboard freshness, and logout from all four roles are listed unchecked in `TESTING.md`; automated tests do not prove those on-device behaviors.
+
 ## 2026-11-15 — Android auth input focus investigation
 
 - Traced Login, Registration, `Field`, shared `Screen`, auth Stack, and auth context. No `autoFocus`, focus refs, imperative `.focus()`/`.blur()`, focus effects, or navigation lifecycle loop exists.

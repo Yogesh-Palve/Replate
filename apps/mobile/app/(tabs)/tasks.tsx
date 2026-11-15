@@ -6,6 +6,7 @@ import { api } from "../../src/api/client";
 import { Button, Card, EmptyState, FilterChip, IconBadge, LoadingState, Screen, SectionHeading, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { createSubmissionGuard, getApiErrorMessage } from "../../src/forms/validation";
+import { invalidateDashboard } from "../../src/dashboard/cache";
 import { useToast } from "../../src/notifications/ToastProvider";
 import { filterTasks, type TaskFilter } from "../../src/tasks/state";
 import { colors, spacing, theme, typography } from "../../src/theme";
@@ -13,7 +14,7 @@ import { colors, spacing, theme, typography } from "../../src/theme";
 type TaskAction = { id: string; op: "accept" | "collect" | "decline" | "deliver" };
 
 export default function Tasks() {
-  const { user } = useAuth();
+  const { user, signingOut } = useAuth();
   const notify = useToast();
   const qc = useQueryClient();
   const profile = (user as any)?.volunteerProfile;
@@ -21,21 +22,19 @@ export default function Tasks() {
   const [filter, setFilter] = useState<TaskFilter>("ALL");
   const actionGuard = useRef(createSubmissionGuard()).current;
   const availabilityGuard = useRef(createSubmissionGuard()).current;
-  const query = useQuery({ queryKey: ["tasks"], queryFn: async () => (await api.get("/volunteer/tasks")).data.tasks });
+  const query = useQuery({ queryKey: ["tasks"], enabled: Boolean(user && !signingOut), queryFn: async ({ signal }) => (await api.get("/volunteer/tasks", { signal })).data.tasks });
   const tasks = query.data ?? [];
   const shownTasks = useMemo(() => filterTasks(tasks, filter), [filter, tasks]);
   const availabilityMutation = useMutation({ mutationFn: (value: boolean) => api.patch("/volunteer/availability", { available: value }) });
   const action = useMutation({
     mutationFn: ({ id, op }: TaskAction) => api.patch(`/assignments/${id}/${op}`),
-    onSuccess: (_result, variables) => {
+    onSuccess: async (_result, variables) => {
       const successMessages = { accept: "Assignment accepted.", collect: "Collection recorded.", decline: "Assignment declined.", deliver: "Delivery marked complete." };
       notify("success", successMessages[variables.op]);
-      void qc.invalidateQueries({ queryKey: ["tasks"] });
-      void qc.invalidateQueries({ queryKey: ["requests"] });
-      void qc.invalidateQueries({ queryKey: ["home"] });
+      await Promise.all([qc.invalidateQueries({ queryKey: ["tasks"] }), qc.invalidateQueries({ queryKey: ["requests"] }), invalidateDashboard(qc, "VOLUNTEER")]);
     },
   });
-  useEffect(() => { if (query.isError) notify("error", getApiErrorMessage(query.error, "Could not load tasks. Check your API connection."), { duration: null }); }, [notify, query.error, query.isError]);
+  useEffect(() => { if (query.isError && user && !signingOut) notify("error", getApiErrorMessage(query.error, "Could not load tasks. Check your API connection."), { duration: null }); }, [notify, query.error, query.isError, signingOut, user]);
   useEffect(() => { if (profile?.available !== undefined) setAvailable(profile.available); }, [profile?.available]);
 
   const setAvailability = (value: boolean) => {

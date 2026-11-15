@@ -7,6 +7,7 @@ export const colors = {
   ink: "#202B25",
   secondaryText: "#6B756E",
   error: "#D9534F",
+  dangerAction: "#B42318",
   success: "#39845C",
   warning: "#E6AD55",
   border: "#E2E8E1",
@@ -58,6 +59,14 @@ export const shadows = {
 } as const;
 
 export type StatusVariant = keyof typeof semantic | "neutral";
+
+export type ButtonPalette = { background: string; foreground: string; border: string; borderWidth: number };
+
+export function getButtonPalette({ secondary = false, destructive = false }: { secondary?: boolean; destructive?: boolean } = {}): ButtonPalette {
+  if (destructive) return { background: colors.dangerAction, foreground: colors.white, border: colors.dangerAction, borderWidth: 0 };
+  if (secondary) return { background: colors.surface, foreground: colors.primary, border: colors.border, borderWidth: 1 };
+  return { background: colors.primary, foreground: colors.white, border: colors.primary, borderWidth: 0 };
+}
 
 export function getStatusVariant(status: string): StatusVariant {
   const normalized = status.trim().toUpperCase().replace(/[\s-]+/g, "_");

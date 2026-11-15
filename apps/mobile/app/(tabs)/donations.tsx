@@ -7,6 +7,7 @@ import { api } from "../../src/api/client";
 import { Button, Card, DateTimeField, EmptyState, Field, FilterChip, IconBadge, LoadingState, Message, Screen, SectionHeading, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { applyDonationStatus, filterDonationsByBucket, getDonationCardState, type DonationBucket } from "../../src/donations/state";
+import { invalidateDashboard } from "../../src/dashboard/cache";
 import { clearFormError, createSubmissionGuard, getApiErrorMessage, validateDonation, type DonationValues, type FormErrors } from "../../src/forms/validation";
 import { useToast } from "../../src/notifications/ToastProvider";
 import { colors, radii, spacing, typography } from "../../src/theme";
@@ -67,7 +68,7 @@ function combineDateAndTime(date: Date | null, time: Date | null): Date | null {
 }
 
 export default function Donations() {
-  const { user } = useAuth();
+  const { user, signingOut } = useAuth();
   const donor = user?.role === "DONOR";
   const requester = user?.role === "NGO";
   const notify = useToast();
@@ -77,7 +78,8 @@ export default function Donations() {
   const [bucket, setBucket] = useState<DonationBucket>("ACTIVE");
   const query = useQuery({
     queryKey: ["donations", search, categoryFilter],
-    queryFn: async () => (await api.get("/donations", { params: { search, category: categoryFilter || undefined } })).data.donations as Donation[],
+    enabled: Boolean(user && !signingOut),
+    queryFn: async ({ signal }) => (await api.get("/donations", { params: { search, category: categoryFilter || undefined }, signal })).data.donations as Donation[],
   });
 
   const cancelMutation = useMutation({
@@ -90,13 +92,13 @@ export default function Donations() {
     onSuccess: async cancelled => {
       await qc.cancelQueries({ queryKey: ["donations"] });
       qc.setQueriesData<Donation[]>({ queryKey: ["donations"] }, current => applyDonationStatus(current, cancelled.id, cancelled.status));
-      await Promise.all([qc.invalidateQueries({ queryKey: ["donations"] }), qc.invalidateQueries({ queryKey: ["requests"] }), qc.invalidateQueries({ queryKey: ["admin"] })]);
+      await Promise.all([qc.invalidateQueries({ queryKey: ["donations"] }), qc.invalidateQueries({ queryKey: ["requests"] }), qc.invalidateQueries({ queryKey: ["admin"] }), invalidateDashboard(qc, "DONOR")]);
     },
   });
   const cancelGuard = useRef(createSubmissionGuard()).current;
   useEffect(() => {
-    if (query.isError) notify("error", getApiErrorMessage(query.error, "Could not load donations. Check the API connection."), { duration: null });
-  }, [notify, query.error, query.isError]);
+    if (query.isError && user && !signingOut) notify("error", getApiErrorMessage(query.error, "Could not load donations. Check the API connection."), { duration: null });
+  }, [notify, query.error, query.isError, signingOut, user]);
 
   const runCancel = (id: string) => Alert.alert("Cancel donation?", "This listing will no longer be available.", [
     { text: "Keep listing", style: "cancel" },
@@ -126,10 +128,10 @@ export default function Donations() {
       pickupAddress: values.pickupAddress.trim(), description: values.description.trim() || undefined,
       preparedAt: values.preparedAt!.toISOString(), collectionDeadline: values.collectionDeadline!.toISOString(),
     }),
-    onSuccess: () => {
+    onSuccess: async () => {
       setForm(false); notify("success", "Donation published successfully."); setFields(emptyForm);
       setPreparedDate(null); setPreparedTime(null); setDeadlineDate(null); setDeadlineTime(null); setFormErrors({});
-      void qc.invalidateQueries({ queryKey: ["donations"] });
+      await Promise.all([qc.invalidateQueries({ queryKey: ["donations"] }), invalidateDashboard(qc, "DONOR")]);
     },
   });
   const submitDonation = () => {

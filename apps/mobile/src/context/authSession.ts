@@ -1,5 +1,19 @@
 export type AuthFlow = "login" | "registration";
 
+export async function endLocalSession({
+  cancelPendingQueries,
+  removeToken,
+  clearUserData,
+}: {
+  cancelPendingQueries: () => Promise<unknown>;
+  removeToken: () => Promise<void>;
+  clearUserData: () => void;
+}): Promise<void> {
+  await cancelPendingQueries();
+  await removeToken();
+  clearUserData();
+}
+
 export async function persistAuthToken(token: string, writeToken: (value: string) => Promise<void>, flow: AuthFlow): Promise<void> {
   try {
     await writeToken(token);

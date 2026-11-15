@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ViewStyle } from "react-native";
 import { Lucide, type LucideIconName } from "@react-native-vector-icons/lucide";
-import { colors, getStatusVariant, radii, semantic, spacing, theme, typography } from "../theme";
+import { colors, getButtonPalette, getStatusVariant, radii, semantic, spacing, theme, typography } from "../theme";
 
 export function Screen({ children }: React.PropsWithChildren) {
   return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>{children}</ScrollView>;
@@ -98,14 +98,15 @@ export function DateTimeField({ label, value, mode, onChange, error }: DateTimeF
 }
 
 export function Button({ title, onPress, secondary, disabled, loading, icon, destructive }: { title: string; onPress: () => void; secondary?: boolean; disabled?: boolean; loading?: boolean; icon?: LucideIconName; destructive?: boolean }) {
+  const palette = getButtonPalette({ secondary, destructive });
   return <Pressable
     disabled={disabled || loading}
     onPress={onPress}
     accessibilityRole="button"
     accessibilityState={{ disabled: disabled || loading, busy: loading }}
-    style={({ pressed }) => [s.button, secondary && s.secondary, destructive && s.destructive, disabled && s.disabled, pressed && !disabled && s.pressed]}
+    style={({ pressed }) => [s.button, { backgroundColor: palette.background, borderColor: palette.border, borderWidth: palette.borderWidth }, disabled && s.disabled, pressed && !disabled && s.pressed]}
   >
-    {loading ? <ActivityIndicator color={secondary ? theme.green : theme.white} /> : <View style={s.buttonContent}>{icon ? <Lucide name={icon} size={18} color={secondary ? theme.green : theme.white} accessibilityElementsHidden importantForAccessibility="no" /> : null}<Text style={[s.buttonText, secondary && { color: theme.green }]}>{title}</Text></View>}
+    {loading ? <ActivityIndicator color={palette.foreground} /> : <View style={s.buttonContent}>{icon ? <Lucide name={icon} size={18} color={palette.foreground} accessibilityElementsHidden importantForAccessibility="no" /> : null}<Text style={[s.buttonText, { color: palette.foreground }]}>{title}</Text></View>}
   </Pressable>;
 }
 
@@ -165,8 +166,6 @@ const s = StyleSheet.create({
   dateButton: { minHeight: 54, justifyContent: "flex-start" },
   button: { backgroundColor: theme.green, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radii.md, alignItems: "center", marginTop: spacing.sm, minHeight: 54, justifyContent: "center" },
   buttonContent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
-  secondary: { backgroundColor: theme.white, borderWidth: 1, borderColor: theme.border },
-  destructive: { backgroundColor: theme.red },
   disabled: { opacity: .55 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
   buttonText: { color: theme.white, fontWeight: typography.weight.bold, fontSize: typography.size.body },

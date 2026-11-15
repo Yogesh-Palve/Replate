@@ -6,6 +6,7 @@ import { api } from "../../src/api/client";
 import { Button, Card, EmptyState, FilterChip, IconBadge, LoadingState, Screen, SectionHeading, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { createSubmissionGuard, getApiErrorMessage } from "../../src/forms/validation";
+import { invalidateDashboard } from "../../src/dashboard/cache";
 import { useToast } from "../../src/notifications/ToastProvider";
 import { theme } from "../../src/theme";
 import { colors, radii, spacing, typography } from "../../src/theme";
@@ -23,19 +24,19 @@ function filterRequestList(requests: any[], filter: RequestFilter, donor: boolea
 }
 
 export default function Requests() {
-  const { user } = useAuth();
+  const { user, signingOut } = useAuth();
   const notify = useToast();
   const qc = useQueryClient();
   const donor = user?.role === "DONOR";
   const ngo = user?.role === "NGO";
   const [filter, setFilter] = useState<RequestFilter>("ALL");
   const actionGuard = useRef(createSubmissionGuard()).current;
-  const query = useQuery({ queryKey: ["requests"], queryFn: async () => (await api.get("/requests")).data.requests });
+  const query = useQuery({ queryKey: ["requests"], enabled: Boolean(user && !signingOut), queryFn: async ({ signal }) => (await api.get("/requests", { signal })).data.requests });
   const action = useMutation({
     mutationFn: ({ id, op }: RequestAction) => op === "confirm"
       ? api.patch(`/requests/${id}/confirm-delivery`)
       : op === "cancel" ? api.patch(`/requests/${id}/cancel`) : api.patch(`/requests/${id}/${op}`),
-    onSuccess: (_result, variables) => {
+    onSuccess: async (_result, variables) => {
       const successMessages = {
         approve: "Request approved; donation quantity reserved.",
         reject: "Request rejected; donation availability was unchanged.",
@@ -43,13 +44,12 @@ export default function Requests() {
         confirm: "Delivery confirmed. Thank you for receiving the donation.",
       };
       notify("success", successMessages[variables.op]);
-      void qc.invalidateQueries({ queryKey: ["requests"] });
-      void qc.invalidateQueries({ queryKey: ["donations"] });
+      await Promise.all([qc.invalidateQueries({ queryKey: ["requests"] }), qc.invalidateQueries({ queryKey: ["donations"] }), invalidateDashboard(qc, user?.role)]);
     },
   });
   useEffect(() => {
-    if (query.isError) notify("error", getApiErrorMessage(query.error, "Could not load requests. Check your API connection."), { duration: null });
-  }, [notify, query.error, query.isError]);
+    if (query.isError && user && !signingOut) notify("error", getApiErrorMessage(query.error, "Could not load requests. Check your API connection."), { duration: null });
+  }, [notify, query.error, query.isError, signingOut, user]);
   const runAction = (variables: RequestAction) => {
     void actionGuard(async () => {
       try { await action.mutateAsync(variables); }

@@ -9,7 +9,7 @@ import {
   validateRegistration,
   validateRequestQuantity,
 } from "./validation";
-import { persistAuthToken } from "../context/authSession";
+import { endLocalSession, persistAuthToken } from "../context/authSession";
 
 test("login validation reports missing and malformed fields", () => {
   assert.deepEqual(validateLogin({ email: "", password: "" }), {
@@ -75,6 +75,28 @@ test("secure storage failures after registration explain that the account alread
     persistAuthToken("synthetic-token", async () => { throw new Error("native storage unavailable"); }, "login"),
     /credentials were accepted.*try logging in again/i,
   );
+});
+
+test("logout cancels protected requests before deleting the token and clearing user data for every role", async () => {
+  for (const role of ["DONOR", "NGO", "VOLUNTEER", "ADMIN"] as const) {
+    const steps: string[] = [];
+    await endLocalSession({
+      cancelPendingQueries: async () => { steps.push("cancel-queries"); },
+      removeToken: async () => { steps.push("remove-token"); },
+      clearUserData: () => { steps.push("clear-user-and-cache"); },
+    });
+    assert.deepEqual(steps, ["cancel-queries", "remove-token", "clear-user-and-cache"], `logout order for ${role}`);
+  }
+});
+
+test("failed token removal keeps the in-memory session data intact", async () => {
+  const steps: string[] = [];
+  await assert.rejects(endLocalSession({
+    cancelPendingQueries: async () => { steps.push("cancel-queries"); },
+    removeToken: async () => { steps.push("remove-token"); throw new Error("secure storage unavailable"); },
+    clearUserData: () => { steps.push("clear-user-and-cache"); },
+  }), /secure storage unavailable/);
+  assert.deepEqual(steps, ["cancel-queries", "remove-token"]);
 });
 
 test("submission guard ignores overlapping duplicate submissions and unlocks afterward", async () => {

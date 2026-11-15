@@ -1,12 +1,13 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { Text, View } from "react-native";
-import { Link } from "expo-router";
+import { Link, useFocusEffect } from "expo-router";
 import { Lucide } from "@react-native-vector-icons/lucide";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../src/api/client";
 import { Button, Card, LoadingState, MetricCard, Screen, Status, Title } from "../../src/components/ui";
 import { useAuth } from "../../src/context/AuthContext";
 import { getDashboardMetrics } from "../../src/dashboard/summary";
+import { dashboardQueryKey, shouldRefreshDashboardOnFocus } from "../../src/dashboard/cache";
 import { getApiErrorMessage } from "../../src/forms/validation";
 import { useToast } from "../../src/notifications/ToastProvider";
 import { colors, radii, spacing, typography } from "../../src/theme";
@@ -19,21 +20,28 @@ const welcomeCopy = {
 };
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, signingOut } = useAuth();
   const notify = useToast();
   const role = user?.role ?? "DONOR";
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => dashboardQueryKey(role), [role]);
   const query = useQuery({
-    queryKey: ["home", role],
-    queryFn: async () => {
-      if (role === "ADMIN") return { admin: (await api.get("/admin/stats")).data.stats };
-      if (role === "VOLUNTEER") return { tasks: (await api.get("/volunteer/tasks")).data.tasks };
-      const [donationResponse, requestResponse] = await Promise.all([api.get("/donations"), api.get("/requests")]);
+    queryKey,
+    enabled: Boolean(user && !signingOut),
+    queryFn: async ({ signal }) => {
+      if (role === "ADMIN") return { admin: (await api.get("/admin/stats", { signal })).data.stats };
+      if (role === "VOLUNTEER") return { tasks: (await api.get("/volunteer/tasks", { signal })).data.tasks };
+      const [donationResponse, requestResponse] = await Promise.all([api.get("/donations", { signal }), api.get("/requests", { signal })]);
       return { donations: donationResponse.data.donations, requests: requestResponse.data.requests };
     },
   });
+  useFocusEffect(useCallback(() => {
+    const state = queryClient.getQueryState(queryKey);
+    if (shouldRefreshDashboardOnFocus(state)) void queryClient.invalidateQueries({ queryKey, refetchType: "active" });
+  }, [queryClient, queryKey]));
   useEffect(() => {
-    if (query.isError) notify("error", getApiErrorMessage(query.error, "We could not load your latest activity."), { duration: null });
-  }, [notify, query.error, query.isError]);
+    if (query.isError && user && !signingOut) notify("error", getApiErrorMessage(query.error, "We could not load your latest activity."), { duration: null });
+  }, [notify, query.error, query.isError, signingOut, user]);
 
   const copy = welcomeCopy[role];
   const metrics = getDashboardMetrics(role, query.data?.donations, query.data?.requests, query.data?.tasks, query.data?.admin);

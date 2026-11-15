@@ -5,7 +5,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../src/api/client";
 import { Button, Card, EmptyState, FilterChip, IconBadge, LoadingState, MetricCard, Screen, SectionHeading, Status, Title } from "../../src/components/ui";
 import { createSubmissionGuard, getApiErrorMessage } from "../../src/forms/validation";
+import { invalidateDashboard } from "../../src/dashboard/cache";
 import { useToast } from "../../src/notifications/ToastProvider";
+import { useAuth } from "../../src/context/AuthContext";
 import { colors, spacing, typography } from "../../src/theme";
 
 type AdminData = {
@@ -15,24 +17,26 @@ type AdminData = {
 type UserRole = "ALL" | "DONOR" | "NGO" | "VOLUNTEER" | "ADMIN";
 
 export default function Admin() {
+  const { user, signingOut } = useAuth();
   const notify = useToast();
   const qc = useQueryClient();
   const [userRole, setUserRole] = useState<UserRole>("ALL");
   const actionGuard = useRef(createSubmissionGuard()).current;
   const query = useQuery({
     queryKey: ["admin"],
-    queryFn: async (): Promise<AdminData> => {
+    enabled: Boolean(user && !signingOut),
+    queryFn: async ({ signal }): Promise<AdminData> => {
       const [stats, orgs, requests, users, donations] = await Promise.all([
-        api.get("/admin/stats"), api.get("/admin/organizations"), api.get("/admin/requests"), api.get("/admin/users"), api.get("/admin/donations"),
+        api.get("/admin/stats", { signal }), api.get("/admin/organizations", { signal }), api.get("/admin/requests", { signal }), api.get("/admin/users", { signal }), api.get("/admin/donations", { signal }),
       ]);
       return { stats: stats.data.stats, organizations: orgs.data.organizations, requests: requests.data.requests, users: users.data.users, donations: donations.data.donations };
     },
   });
   const verify = useMutation({
     mutationFn: (id: string) => api.patch(`/admin/organizations/${id}/verify`, { verified: true }),
-    onSuccess: () => { notify("success", "Organization verified."); void qc.invalidateQueries({ queryKey: ["admin"] }); },
+    onSuccess: async () => { notify("success", "Organization verified."); await Promise.all([qc.invalidateQueries({ queryKey: ["admin"] }), invalidateDashboard(qc, "ADMIN")]); },
   });
-  useEffect(() => { if (query.isError) notify("error", getApiErrorMessage(query.error, "Admin data could not be loaded. Confirm this account has admin access."), { duration: null }); }, [notify, query.error, query.isError]);
+  useEffect(() => { if (query.isError && user && !signingOut) notify("error", getApiErrorMessage(query.error, "Admin data could not be loaded. Confirm this account has admin access."), { duration: null }); }, [notify, query.error, query.isError, signingOut, user]);
   const verifyOrganization = (id: string) => { void actionGuard(async () => {
     try { await verify.mutateAsync(id); }
     catch (error) { notify("error", getApiErrorMessage(error, "Organization verification could not be saved. Try again."), { duration: null }); }

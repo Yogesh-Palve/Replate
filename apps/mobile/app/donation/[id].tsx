@@ -13,14 +13,14 @@ type Donation = { id: string; foodName: string; category: string; quantity: numb
 
 export default function DonationDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, signingOut } = useAuth();
   const router = useRouter();
   const notify = useToast();
   const qc = useQueryClient();
   const [quantity, setQuantity] = useState("");
   const [quantityError, setQuantityError] = useState<string>();
   const guard = useRef(createSubmissionGuard()).current;
-  const query = useQuery({ queryKey: ["donation", id], enabled: Boolean(id), queryFn: async () => (await api.get(`/donations/${id}`)).data.donation as Donation });
+  const query = useQuery({ queryKey: ["donation", id], enabled: Boolean(id && user && !signingOut), queryFn: async ({ signal }) => (await api.get(`/donations/${id}`, { signal })).data.donation as Donation });
   const requestMutation = useMutation({
     mutationFn: async (amount: number) => api.post(`/requests/donations/${id}/requests`, { quantity: amount }),
     onSuccess: async () => {
@@ -29,7 +29,7 @@ export default function DonationDetails() {
       router.replace("/(tabs)/requests");
     },
   });
-  useEffect(() => { if (query.isError) notify("error", getApiErrorMessage(query.error, "Could not load this donation. Try again."), { duration: null }); }, [notify, query.error, query.isError]);
+  useEffect(() => { if (query.isError && user && !signingOut) notify("error", getApiErrorMessage(query.error, "Could not load this donation. Try again."), { duration: null }); }, [notify, query.error, query.isError, signingOut, user]);
   const donation = query.data;
   const requestable = user?.role === "NGO" && donation && ["AVAILABLE", "PARTIALLY_RESERVED"].includes(donation.status) && donation.availableQuantity > 0 && new Date(donation.collectionDeadline) > new Date();
   const submitRequest = () => {

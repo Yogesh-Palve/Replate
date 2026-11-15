@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { colors, designTokens, getStatusVariant, radii, spacing, theme, typography } from "./index.js";
+import { colors, designTokens, getButtonPalette, getStatusVariant, radii, spacing, theme, typography } from "./index.js";
 
 test("brand palette and existing screen aliases use the RePlate design colors", () => {
   assert.equal(colors.primary, "#176B45");
@@ -35,4 +35,19 @@ test("workflow statuses map to accessible semantic badge variants", () => {
   assert.equal(getStatusVariant("COMPLETED"), "success");
   assert.equal(getStatusVariant("AVAILABLE"), "success");
   assert.equal(getStatusVariant("Account verification is required before requesting food."), "neutral");
+});
+
+test("destructive buttons use the centralized danger surface and white foreground", () => {
+  assert.deepEqual(getButtonPalette({ secondary: true, destructive: true }), {
+    background: colors.dangerAction, foreground: colors.white, border: colors.dangerAction, borderWidth: 0,
+  });
+  assert.deepEqual(getButtonPalette({ secondary: true }), {
+    background: colors.surface, foreground: colors.primary, border: colors.border, borderWidth: 1,
+  });
+  const luminance = (hex: string) => {
+    const rgb = hex.slice(1).match(/.{2}/g)!.map(part => parseInt(part, 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+  };
+  const { foreground, background } = getButtonPalette({ destructive: true });
+  assert.ok((luminance(foreground) + 0.05) / (luminance(background) + 0.05) >= 4.5, "danger button text meets WCAG AA contrast");
 });

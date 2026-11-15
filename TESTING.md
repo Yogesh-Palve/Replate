@@ -178,3 +178,14 @@ Code-level status: shared focus-triggered state updates have been removed and An
 
 - Passed: mobile tests 29/29, workspace TypeScript, Android production export (1,232 modules; 2.9 MB Hermes), and `git diff --check`.
 - Device reproduction was not possible: this workstation has no `adb` command or Android emulator. Keep the checklist above unchecked until tested on the physical phone.
+
+## Phase 2 physical-device follow-up — 2026-11-15 (manual checks pending)
+
+- [ ] As Donor, create a listing and return Home; confirm **Active listings** increases once and **Needs review** / **Completed requests** remain donor-specific.
+- [ ] As Donor, cancel an eligible listing and return Home; confirm active-listing metrics update. Also approve/reject a request and confirm the donor request metrics refresh.
+- [ ] Repeat listing creation/cancellation checks after navigating back from Donations and after the Home data has aged beyond 15 seconds; verify one refresh occurs on focus and no repeated request loop occurs.
+- [ ] Check **Cancel listing**, **Log out**, **Decline request**, and **Cancel request**. Confirm danger red background with white readable text/icon and no green foreground on any role.
+- [ ] Log out from Donor, NGO, Volunteer, and Admin. Confirm each returns to Welcome without a **Sign in to continue** / **Unauthenticated** alert.
+- [ ] While signed in, trigger a genuine expired/invalid session response in a safe test session. Confirm it still surfaces an authentication error; logout-specific handling must not hide normal 401 errors.
+
+Phase 2 follow-up automated checks passed: mobile tests 34/34, API tests 8/8, workspace TypeScript, shared/API build, Android production export (1,233 modules; 2.9 MB Hermes), and `git diff --check`. These do not replace the unchecked physical-device actions above.
