@@ -1,10 +1,20 @@
 # Development Log
 
+## 2026-11-15 — Phase 5: Final stability and CPAD preparation
+
+- Final live API/database smoke passed across Donor, NGO, Volunteer, and Admin, including role guards, request approval and allocation, QR rotation/revocation/authorization, concurrent one-time scan protection, delivery, NGO confirmation, and role-scoped impact reconciliation. `/health` returned `ok`; no database reset or deletion was used.
+- Passed in the final code review: API tests 12/12; mobile tests 38/38; workspace TypeScript; shared/API build; Prisma schema and migration status; Expo SDK dependency validation; Expo Doctor 20/20; Android production export (1,555 modules; 3.7 MB Hermes).
+- `npm audit` reports 6 transitive findings (3 moderate, 3 high) under `minimatch` via Expo fingerprint and `deepmerge-ts` via Prisma config. The suggested `--force` path changes major framework versions; no such upgrade was applied. Targeted overrides did not produce a validated lockfile resolution. Track compatible upstream patches; details are in `TESTING.md`.
+- Added `ARCHITECTURE.md` with system/trust-boundary and donation lifecycle diagrams, and `CPAD_DEMO.md` with setup, an eight-minute role sequence, and a screenshot list that avoids capturing live QR tokens or credentials.
+- User confirmed the core QR handover on a physical Android phone. This workstation has no Android device/emulator or `adb`, so actual screenshot images and the remaining expiry/permission-negative checks are still manual. The capture checklist is ready; no images were fabricated.
+- Phase 5 remains limited to polish, verification, and CPAD preparation; no new major feature or Smart Expiring-Soon system was added.
+
 ## 2026-11-15 — Physical QR confirmation and NGO listing badge fix
 
 - User confirmed the donor-to-assigned-volunteer QR handover succeeded on a physical Android phone. The QR display, scan, and collection checklist items are marked accordingly; expiry/reissue, negative scans, camera permission recovery, and downstream receipt checks remain pending.
 - Fixed the NGO Browse card layout for `PARTIALLY_RESERVED`: the badge now reads “Partially reserved” and moves below the header so it cannot squeeze the listing title. Shared status labels for other long states are title-cased, with a max-width and wrapping safeguard on the common badge.
 - Added regression coverage for donation-card status labels and other long workflow labels. Mobile tests, TypeScript, and Android production export passed (38 mobile tests; 1,555 modules; 3.7 MB Hermes bundle).
+- Commit: `66372d6` (`Fix long donation status badge layout`).
 
 ## 2026-11-15 — Phase 4: One-time QR collection verification
 

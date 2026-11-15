@@ -2,7 +2,7 @@
 
 ## Objective and guardrails
 
-Elevate the existing RePlate monorepo into a polished food redistribution product while preserving the working Expo, Express, PostgreSQL, and Prisma architecture. Phases 1 and 2 are complete. The user has authorized Phases 3, 4, and 5 to proceed autonomously; the only planned pause is for physical-device QR/camera verification after Phase 4 automated work is complete.
+Elevate the existing RePlate monorepo into a polished food redistribution product while preserving the working Expo, Express, PostgreSQL, and Prisma architecture. Phases 1–5 are implemented. The user confirmed the core physical Android QR handover; remaining device checks and screenshot capture are recorded for manual completion.
 
 - Keep role authorization, validation, transactional reservations, notification behavior, native pickers, and existing navigation working.
 - Keep PostgreSQL data and migrations non-destructive. Any future schema changes are additive, reviewed, and tested against existing records.
@@ -99,17 +99,17 @@ Delivered a role-scoped API and dashboard backed by completed requests with conf
 
 API and mobile tests, TypeScript/build checks, the live four-role workflow smoke, and Android production export passed. Phase 3 is committed after final plan reconciliation.
 
-## Phase 4 — QR collection verification (implementation and automated checks complete; physical-device verification pending)
+## Phase 4 — QR collection verification (complete; core handover physically confirmed by user)
 
 Extend the existing assignment/collection state machine: the donor generates a short-lived QR for an accepted volunteer assignment, and that assigned volunteer scans it to mark collection. The server issues a cryptographically random token, stores only a keyed hash, checks donor ownership and volunteer assignment, expiry and one-time use, and consumes the token atomically with the existing collection transition. QR plaintext is returned only to the donor who generated it and is never logged. Existing delivery and NGO receipt confirmation continue unchanged. Use SDK 58 compatible camera/QR packages and an additive migration only if required.
 
-Tests cover valid issuance, rotation, decline revocation, malformed/invalid/expired/reused tokens, other-volunteer access, role guards, and concurrent consumption. Live PostgreSQL workflow and Android export pass; migration status is up to date and existing records were retained. Physical camera permission, display, and scan behavior must be checked on the user's Android phone before Phase 5.
+Tests cover valid issuance, rotation, decline revocation, malformed/invalid/expired/reused tokens, other-volunteer access, role guards, and concurrent consumption. Live PostgreSQL workflow and Android export pass; migration status is up to date and existing records were retained. User confirmed the core donor QR display/volunteer scan/collection handover on physical Android. Extended expiry, denial-recovery, and negative-device cases remain unchecked in `TESTING.md`.
 
-## Phase 5 — Final polish and CPAD preparation (authorized; after QR device check)
+## Phase 5 — Final polish and CPAD preparation (complete)
 
-Run complete four-role workflow regression, concurrency/security checks, Expo Doctor/dependency validation, dependency audit review, Android production export/build, responsive Android visual/device checks, accessibility/performance review, and a documentation consistency pass. Verify the final journey: Donor → NGO request → Donor approval → Volunteer assignment → pickup verification → collection → delivery verification → NGO confirmation → updated impact metrics. Do not report physical-device verification that was not performed.
+Ran the four-role live workflow regression, concurrency and authorization checks, Expo Doctor/dependency validation, dependency audit review, Android production export, and documentation consistency review. Verified the server/API journey: Donor → NGO request → Donor approval → Volunteer assignment → QR verification → collection → delivery → NGO confirmation → updated impact metrics. The user confirmed the core QR handover on physical Android. A visual check of the changed listing badge, full font-scale/navigation regression, and screenshot capture cannot be performed here without an Android device/emulator; these are listed as manual items.
 
-Prepare accurate README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMENT_LOG, architecture diagram, demonstration instructions, and a screenshot capture checklist. Do not fabricate physical-device screenshots. Record any remaining device-only limitations and then report the final status.
+Prepared README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMENT_LOG, this plan, the architecture diagram, demonstration sequence, and a screenshot capture checklist. No device screenshots were fabricated. Report remaining device-only checks and audit findings with the final status.
 
 ## Phase 1 progress log
 
@@ -156,4 +156,15 @@ Prepare accurate README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMEN
 - [x] Pass TypeScript, API/mobile unit tests, API build, Prisma validation/migration status, Expo SDK package check, live database smoke, and Android production export.
 - [ ] Physical Android camera/permission/QR test (awaiting user confirmation in `TESTING.md`).
 
-**Phase 4 status: implementation and automated checks complete. Pause before Phase 5 for the physical-device QR result.**
+**Phase 4 status: implementation, automated checks, and the user-confirmed core physical QR handover are complete. Extended negative and permission-recovery checks remain unchecked.**
+
+## Phase 5 progress log
+
+- [x] Run final four-role API/authorization/workflow smoke against the configured database; preserve all existing data.
+- [x] Run API/mobile tests, workspace TypeScript, shared/API build, Prisma validation/migration status, Expo SDK check, Expo Doctor, API health, and Android production export.
+- [x] Review npm audit findings; reject automatic major-version changes that downgrade the current Expo SDK or upgrade Prisma without compatibility validation.
+- [x] Update README, TESTING, API_DOCUMENTATION, DATABASE_SCHEMA, DEVELOPMENT_LOG, and this plan; add `ARCHITECTURE.md` and `CPAD_DEMO.md`.
+- [x] Record the successful user-reported physical QR handover and keep unobserved device checks unchecked.
+- [ ] Capture actual presentation screenshots on a physical Android phone or emulator; none is connected to this workstation.
+
+**Phase 5 status: final code, automated tests, docs, architecture, and demo preparation complete. Screenshot capture and remaining device-only checks are manual; see `CPAD_DEMO.md` and `TESTING.md`.**

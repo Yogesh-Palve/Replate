@@ -214,3 +214,12 @@ Phase 2 follow-up automated checks passed: mobile tests 34/34, API tests 8/8, wo
 - [ ] Deny camera permission once, verify RePlate explains the need, then grant permission in Android settings and retry scanning.
 
 The core donor-to-volunteer QR handover was confirmed on the user's physical Android phone. Unchecked negative, permission-recovery, expiry, and downstream receipt checks still require manual confirmation. This workstation has no Android emulator or `adb` connection.
+
+## Phase 5 final regression and CPAD preparation
+
+- Passed in final review: API tests 12/12; mobile tests 38/38; TypeScript for all workspaces; shared/API build; Prisma validation and migration status; Expo dependency validation; Expo Doctor 20/20; API health; live four-role workflow smoke including authorization, quantity consistency, QR rotation/revocation and concurrent replay prevention; Android production export (1,555 modules; 3.7 MB Hermes bundle).
+- The user confirms the core donor-to-volunteer QR handover works on a physical Android phone. The narrow `Partially reserved` badge layout fix was type-checked and included in the successful production export; final visual confirmation of that specific listing on the phone is not available to this workstation.
+- `npm audit` reported 6 findings (3 moderate, 3 high) across transitive `minimatch` under Expo fingerprint and `deepmerge-ts` under Prisma config. Patched versions exist, but npm's suggested automatic fix would downgrade Expo to SDK 52 and make a major Prisma change. No framework or dependency changes were applied for audit alone; no safe, compatible lockfile resolution was demonstrated. Treat these as local tooling risks and re-evaluate when Expo/Prisma publish compatible patch releases. See [minimatch advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249) and [deepmerge-ts advisory](https://github.com/advisories/GHSA-ggr8-5vv4-36mx).
+- Expo Doctor passed all 20 checks. The SDK package check used Expo's bundled compatibility map because the online versions endpoint was unavailable.
+- No Android emulator or `adb` is installed here, so no real screenshot files were captured. `CPAD_DEMO.md` contains a practical capture list; use the actual phone/emulator and avoid exposing an active QR or credentials.
+- The complete architecture overview and demonstration instructions are in `ARCHITECTURE.md` and `CPAD_DEMO.md`. Keep the remaining manual verification boxes above unchecked until those actions are directly confirmed.
