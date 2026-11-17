@@ -5,7 +5,7 @@ services:
     plan: free
     region: singapore
     rootDir: .
-    buildCommand: npm ci && npm run db:generate -w @replate/api && npm run build
+    buildCommand: npm ci --include=dev && npm run db:generate -w @replate/api && npm run build
     startCommand: npm run db:deploy -w @replate/api && npm run start -w @replate/api
     healthCheckPath: /health
     envVars:
