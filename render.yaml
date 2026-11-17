@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: replate-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: .
+    buildCommand: npm ci && npm run db:generate -w @replate/api && npm run build
+    startCommand: npm run db:deploy -w @replate/api && npm run start -w @replate/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      - key: CORS_ORIGIN
+        value: "*"
